@@ -11,7 +11,7 @@ void setup() {
   Serial2.begin(UART_BAUD_RATE, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
 
   gameEngine.initialize();
-  gameEngine.startGame();  // Will eventualy be triggered by scanner
+  gameEngine.start();  // Will eventualy be triggered by scanner
 }
 
 void loop() {

@@ -11,11 +11,17 @@
 // 4-Digit 7-Segment Display
 // ====================
 // Display Module 1 MM.DD
-#define D1_DIO_PIN 5
-#define D1_RCLK_PIN 17
-#define D1_SCLK_PIN 16
+#define D1_DIO_PIN 15
+#define D1_RCLK_PIN 2
+#define D1_SCLK_PIN 4
 
 // Display Module 2 YYYY
-#define D2_DIO_PIN 25
-#define D2_RCLK_PIN 26
-#define D2_SCLK_PIN 27
+#define D2_DIO_PIN 16
+#define D2_RCLK_PIN 17
+#define D2_SCLK_PIN 5
+
+// MM DD YYYY Potentiometers
+#define MONTH_POT_PIN 36
+#define DAY_POT_PIN 39
+#define YEAR_HIGH_POT_PIN 34
+#define YEAR_LOW_POT_PIN 35

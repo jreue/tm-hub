@@ -26,7 +26,7 @@ void GameEngine::start() {
 void GameEngine::loop() {
   unsigned long now = millis();
   if (gameState.gameActive && (now - lastUpdate >= 1000)) {
-    publishRemainingTime();
+  //  publishRemainingTime();
     lastUpdate = now;
   }
 

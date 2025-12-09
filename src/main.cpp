@@ -1,9 +1,11 @@
 #include <Arduino.h>
 
 #include "DateController.h"
+#include "DateDialsController.h"
 #include "GameEngine.h"
 
 DateController dateController;
+DateDialsController dateDialsController;
 GameEngine gameEngine(dateController);
 
 void setup() {
@@ -12,8 +14,16 @@ void setup() {
 
   gameEngine.initialize();
   gameEngine.start();  // Will eventualy be triggered by scanner
+
+  dateController.showDate(12, 25, 1975);  // Example date
 }
 
 void loop() {
   gameEngine.loop();
+
+  DateFromDials date = dateDialsController.readDate();
+
+  if (date.changed) {
+    dateController.showDate(date.month, date.day, date.year);
+  }
 }

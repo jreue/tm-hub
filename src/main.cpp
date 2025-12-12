@@ -1,12 +1,9 @@
 #include <Arduino.h>
 
-#include "DateController.h"
-#include "DateDialsController.h"
 #include "GameEngine.h"
+#include "hardware_config.h"
 
-DateController dateController;
-DateDialsController dateDialsController;
-GameEngine gameEngine(dateController);
+GameEngine gameEngine;
 
 void setup() {
   Serial.begin(115200);
@@ -15,16 +12,9 @@ void setup() {
   gameEngine.initialize();
   gameEngine.start();  // Will eventualy be triggered by scanner
 
-  dateController.showDate(12, 25, 1975);  // Example date
+  Serial.println("tm-hub started");
 }
 
 void loop() {
   gameEngine.loop();
-
-  DateFromDials date = dateDialsController.readDate();
-
-    if (date.changed) {
-    Serial.println(String(date.month) + "/" + String(date.day) + "/" + String(date.year));
-    dateController.showDate(date.month, date.day, date.year);
-  }
 }

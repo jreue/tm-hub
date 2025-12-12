@@ -5,7 +5,7 @@
 // ============================================================================
 // Public Methods
 // ============================================================================
-GameEngine::GameEngine(DateController& dateController) : dateController(dateController) {
+GameEngine::GameEngine() {
   lastUpdate = 0;
   gameState.gameActive = false;
   gameState.gameStartTime = 0;
@@ -13,7 +13,6 @@ GameEngine::GameEngine(DateController& dateController) : dateController(dateCont
 
 // Called when the game is turned on, but not yet started
 void GameEngine::initialize() {
-  dateController.begin();
 }
 
 // Officially starts the game
@@ -26,11 +25,9 @@ void GameEngine::start() {
 void GameEngine::loop() {
   unsigned long now = millis();
   if (gameState.gameActive && (now - lastUpdate >= 1000)) {
-  //  publishRemainingTime();
+    //  publishRemainingTime();
     lastUpdate = now;
   }
-
-  dateController.loop();
 }
 
 // ============================================================================

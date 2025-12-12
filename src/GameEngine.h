@@ -2,8 +2,6 @@
 
 #include <Arduino.h>
 
-#include "DateController.h"
-
 struct GameState {
     bool gameActive;
     unsigned long gameStartTime;
@@ -11,13 +9,12 @@ struct GameState {
 
 class GameEngine {
   public:
-    GameEngine(DateController& dateController);
+    GameEngine();
     void initialize();
     void start();
     void loop();
 
   private:
-    DateController& dateController;
     GameState gameState;
     String currentCode;
     unsigned long lastUpdate;

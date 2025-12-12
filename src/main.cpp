@@ -23,7 +23,8 @@ void loop() {
 
   DateFromDials date = dateDialsController.readDate();
 
-  if (date.changed) {
+    if (date.changed) {
+    Serial.println(String(date.month) + "/" + String(date.day) + "/" + String(date.year));
     dateController.showDate(date.month, date.day, date.year);
   }
 }

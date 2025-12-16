@@ -1,89 +1,131 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
+#include <FastLED.h>
+#include <Wire.h>
 
 #include "GameEngine.h"
 #include "hardware_config.h"
 
+#define LED_DATA_PIN 2
+#define NUM_LEDS 48
+#define MATRIX_COLS 4
+#define MATRIX_ROWS 12
+CRGB leds[NUM_LEDS];
+
 GameEngine gameEngine;
-String serialBuffer = "";
+unsigned long lastDevicePoll = 0;
+const unsigned long DEVICE_POLL_INTERVAL = 100;  // Poll every 100ms
 
-void handleModule1Message(bool status) {
-  Serial.println("Handling Module 1 Message");
-  Serial.printf("Module 1: %s\n", status ? "true" : "false");
-  digitalWrite(MODULE1_LED_PIN, status ? HIGH : LOW);
-}
-
-void handleModule2Message(bool status) {
-  Serial.println("Handling Module 2 Message");
-  Serial.printf("Module 2: %s\n", status ? "true" : "false");
-  digitalWrite(MODULE2_LED_PIN, status ? HIGH : LOW);
-}
-
-void checkSerialMessages() {
-  while (Serial2.available()) {
-    char c = Serial2.read();
-    Serial.println(serialBuffer);  // Echo received characters for debugging
-    if (c == '\n') {
-      // Parse complete JSON message
-      JsonDocument doc;
-      DeserializationError error = deserializeJson(doc, serialBuffer);
-
-      if (!error) {
-        int id = doc["id"];
-        bool status = doc["status"];
-
-        if (id == 1) {
-          handleModule1Message(status);
-        } else if (id == 2) {
-          handleModule2Message(status);
-        } else {
-          Serial.printf("Unknown module ID: %d\n", id);
-        }
-      } else {
-        Serial.printf("JSON parse error: %s\n", error.c_str());
-      }
-
-      serialBuffer = "";
-    } else {
-      serialBuffer += c;
-    }
-  }
-}
+// Forward declarations
+void scanI2CBus();
+void checkAllDevices();
+void checkDevice(uint8_t address, int displayRow);
+bool isDeviceAvailable(uint8_t addr);
+void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated);
+int getLEDIndex(int col, int row);
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(UART_BAUD_RATE, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
 
-  // Initialize LED pins
-  pinMode(MODULE1_LED_PIN, OUTPUT);
-  pinMode(MODULE2_LED_PIN, OUTPUT);
-  pinMode(MODULE3_LED_PIN, OUTPUT);
-  pinMode(MODULE4_LED_PIN, OUTPUT);
-  pinMode(MODULE5_LED_PIN, OUTPUT);
-  pinMode(MODULE6_LED_PIN, OUTPUT);
-  digitalWrite(MODULE1_LED_PIN, LOW);
-  digitalWrite(MODULE2_LED_PIN, LOW);
-  digitalWrite(MODULE3_LED_PIN, LOW);
-  digitalWrite(MODULE4_LED_PIN, LOW);
-  digitalWrite(MODULE5_LED_PIN, LOW);
-  digitalWrite(MODULE6_LED_PIN, LOW);
+  FastLED.addLeds<WS2812, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.setBrightness(25);
+  FastLED.clear(true);
+  FastLED.show();
 
-  gameEngine.initialize();
-  gameEngine.start();  // Will eventualy be triggered by scanner
+  esp_log_level_set("i2c", ESP_LOG_NONE);  // Suppress I2C logs
+  Wire.setTimeOut(50);                     // 50ms timeout for I2C operations
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
 
-  Serial.println("tm-hub started");
-  Serial.println("Awaiting messages from modules...");
-
-  // Test: Send test messages after 2 seconds
-
-  //  Serial.println("Waiting 5 seconds before sending test messages...");
-  // delay(5000);
-  // Serial.println("Sending loopback test messages...");
-
-  // Serial2.println("{\"id\":2,\"status\":true}");
+  Serial.println("tm-hub started (I2C mode)");
+  Serial.println("Waiting for devices to initialize...");
+  delay(2000);  // Give devices time to boot and initialize I2C
+  scanI2CBus();
+  Serial.println("Polling devices...");
 }
 
 void loop() {
-  gameEngine.loop();
-  checkSerialMessages();
+  // gameEngine.loop();
+
+  unsigned long currentMillis = millis();
+
+  // Check all modules at the defined interval
+  if (currentMillis - lastDevicePoll >= DEVICE_POLL_INTERVAL) {
+    lastDevicePoll = currentMillis;
+    checkAllDevices();
+  }
+}
+
+void scanI2CBus() {
+  Serial.println("Scanning I2C bus...");
+
+  int devicesFound = 0;
+  for (uint8_t addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    uint8_t error = Wire.endTransmission();
+    if (error == 0) {
+      Serial.printf("Found device at 0x%02X\n", addr);
+      devicesFound++;
+    }
+  }
+  Serial.printf("Scan complete. Found %d device(s)\n", devicesFound);
+}
+
+void checkAllDevices() {
+  checkDevice(DEVICE_1_ADDR, 0);  // Device 0x10 on row 0
+  checkDevice(DEVICE_2_ADDR, 1);  // Device 0x11 on row 1
+}
+
+void checkDevice(uint8_t address, int displayRow) {
+  bool isAvailable = isDeviceAvailable(address);
+
+  if (!isAvailable) {
+    updateStatusLEDs(displayRow, false, false);
+    Serial.printf("Device (0x%02X): OFFLINE\n", address);
+    return;
+  }
+
+  // Device is present, try to read status
+  Wire.requestFrom(address, (uint8_t)1);
+
+  if (Wire.available()) {
+    uint8_t status = Wire.read();
+    updateStatusLEDs(displayRow, true, status);
+    Serial.printf("Device (0x%02X): ONLINE - Switch: %s\n", address, status ? "TRUE" : "FALSE");
+  } else {
+    // Device present but no data available
+    updateStatusLEDs(displayRow, true, false);
+    Serial.printf("Device (0x%02X): ONLINE - No data\n", address);
+  }
+}
+
+bool isDeviceAvailable(uint8_t addr) {
+  Wire.beginTransmission(addr);
+  uint8_t error = Wire.endTransmission();
+  Serial.printf("Device 0x%02X endTransmission returned: %d\n", addr, error);
+  return (error == 0);
+}
+
+// Update LED display for a device
+// Column 0: Available (Red = offline, Green = online)
+// Column 1: Calibrated (Green = TRUE, Orange = FALSE)
+void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated) {
+  if (!isAvailable) {
+    leds[getLEDIndex(0, row)] = CRGB::Red;    // Availability: Red
+    leds[getLEDIndex(1, row)] = CRGB::Black;  // Status: Off (no data)
+  } else {
+    leds[getLEDIndex(0, row)] = CRGB::Green;                                // Availability: Green
+    leds[getLEDIndex(1, row)] = isCalibrated ? CRGB::Green : CRGB::Orange;  // Status
+  }
+  FastLED.show();
+}
+
+// Helper function to get LED index from column and row
+// Handles serpentine/zigzag wiring pattern
+int getLEDIndex(int col, int row) {
+  if (row % 2 == 0) {
+    // Even rows: left to right
+    return row * MATRIX_COLS + col;
+  } else {
+    // Odd rows: right to left (serpentine)
+    return row * MATRIX_COLS + (MATRIX_COLS - 1 - col);
+  }
 }

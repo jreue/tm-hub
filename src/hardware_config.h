@@ -1,18 +1,15 @@
 #pragma once
 
 // ====================
-// UART Configuration
+// I2C Configuration
 // ====================
-#define UART_BAUD_RATE 9600
-#define UART_RX_PIN 19
-#define UART_TX_PIN 21
+#define I2C_SDA_PIN 21  // GREEN
+#define I2C_SCL_PIN 19  // YELLOW
 
-// ====================
-// Module Status LEDs
-// ====================
-#define MODULE1_LED_PIN 5
-#define MODULE2_LED_PIN 17
-#define MODULE3_LED_PIN 16
-#define MODULE4_LED_PIN 4
-#define MODULE5_LED_PIN 2
-#define MODULE6_LED_PIN 15
+// Device Module I2C Addresses
+#define DEVICE_1_ADDR 0x10
+#define DEVICE_2_ADDR 0x11
+#define DEVICE_3_ADDR 0x12
+#define DEVICE_4_ADDR 0x13
+#define DEVICE_5_ADDR 0x14
+#define DEVICE_6_ADDR 0x15

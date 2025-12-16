@@ -12,7 +12,7 @@ unsigned long lastDevicePoll = 0;
 const unsigned long DEVICE_POLL_INTERVAL = 100;  // Poll every 100ms
 
 // Device configuration
-const uint8_t DEVICE_ADDRESSES[] = {DEVICE_1_ADDR, DEVICE_2_ADDR};
+const uint8_t DEVICE_ADDRESSES[] = {DEVICE_1_ADDR, DEVICE_2_ADDR, DEVICE_3_ADDR};
 const int NUM_DEVICES = sizeof(DEVICE_ADDRESSES) / sizeof(DEVICE_ADDRESSES[0]);
 
 // Device state tracking
@@ -43,8 +43,17 @@ void setup() {
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
 
   Serial.println("tm-hub started (I2C mode)");
-  Serial.println("Waiting for devices to initialize...");
+  Serial.println("Waiting 2 seconds for devices to initialize...");
   delay(2000);  // Give devices time to boot and initialize I2C
+
+  Serial.printf("tm-hub will now scan for the %d known device(s): ", NUM_DEVICES);
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    Serial.printf("0x%02X", DEVICE_ADDRESSES[i]);
+    if (i < NUM_DEVICES - 1)
+      Serial.print(", ");
+  }
+  Serial.println();
+
   scanI2CBus();
   Serial.println("Polling devices...");
 }

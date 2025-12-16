@@ -5,15 +5,22 @@
 #include "GameEngine.h"
 #include "hardware_config.h"
 
-#define LED_DATA_PIN 2
-#define NUM_LEDS 48
-#define MATRIX_COLS 4
-#define MATRIX_ROWS 12
 CRGB leds[NUM_LEDS];
 
 GameEngine gameEngine;
 unsigned long lastDevicePoll = 0;
 const unsigned long DEVICE_POLL_INTERVAL = 100;  // Poll every 100ms
+
+// Device configuration
+const uint8_t DEVICE_ADDRESSES[] = {DEVICE_1_ADDR, DEVICE_2_ADDR};
+const int NUM_DEVICES = sizeof(DEVICE_ADDRESSES) / sizeof(DEVICE_ADDRESSES[0]);
+
+// Device state tracking
+struct DeviceState {
+    bool available = false;
+    bool calibrated = false;
+};
+DeviceState deviceStates[NUM_DEVICES];
 
 // Forward declarations
 void scanI2CBus();
@@ -70,37 +77,49 @@ void scanI2CBus() {
 }
 
 void checkAllDevices() {
-  checkDevice(DEVICE_1_ADDR, 0);  // Device 0x10 on row 0
-  checkDevice(DEVICE_2_ADDR, 1);  // Device 0x11 on row 1
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    checkDevice(DEVICE_ADDRESSES[i], i);
+  }
 }
 
 void checkDevice(uint8_t address, int displayRow) {
   bool isAvailable = isDeviceAvailable(address);
+  bool isCalibrated = false;
 
-  if (!isAvailable) {
-    updateStatusLEDs(displayRow, false, false);
-    Serial.printf("Device (0x%02X): OFFLINE\n", address);
-    return;
+  if (isAvailable) {
+    // Device is present, try to read status
+    Wire.requestFrom(address, (uint8_t)1);
+    if (Wire.available()) {
+      isCalibrated = Wire.read();
+    }
   }
 
-  // Device is present, try to read status
-  Wire.requestFrom(address, (uint8_t)1);
+  // Check if state changed
+  DeviceState& prevState = deviceStates[displayRow];
+  bool availabilityChanged = (prevState.available != isAvailable);
+  bool calibrationChanged = (prevState.calibrated != isCalibrated);
 
-  if (Wire.available()) {
-    uint8_t status = Wire.read();
-    updateStatusLEDs(displayRow, true, status);
-    Serial.printf("Device (0x%02X): ONLINE - Switch: %s\n", address, status ? "TRUE" : "FALSE");
-  } else {
-    // Device present but no data available
-    updateStatusLEDs(displayRow, true, false);
-    Serial.printf("Device (0x%02X): ONLINE - No data\n", address);
+  if (availabilityChanged || calibrationChanged) {
+    // Update stored state
+    prevState.available = isAvailable;
+    prevState.calibrated = isCalibrated;
+
+    // Update LEDs
+    updateStatusLEDs(displayRow, isAvailable, isCalibrated);
+
+    // Print only on change
+    if (!isAvailable) {
+      Serial.printf("Device (0x%02X): OFFLINE\n", address);
+    } else {
+      Serial.printf("Device (0x%02X): ONLINE - Calibrated: %s\n", address,
+                    isCalibrated ? "TRUE" : "FALSE");
+    }
   }
 }
 
 bool isDeviceAvailable(uint8_t addr) {
   Wire.beginTransmission(addr);
   uint8_t error = Wire.endTransmission();
-  Serial.printf("Device 0x%02X endTransmission returned: %d\n", addr, error);
   return (error == 0);
 }
 

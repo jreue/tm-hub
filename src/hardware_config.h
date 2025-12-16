@@ -13,3 +13,9 @@
 #define DEVICE_4_ADDR 0x13
 #define DEVICE_5_ADDR 0x14
 #define DEVICE_6_ADDR 0x15
+
+// LED Status Display
+#define LED_DATA_PIN 2
+#define NUM_LEDS 48
+#define MATRIX_COLS 4
+#define MATRIX_ROWS 12

@@ -38,6 +38,11 @@ void setup() {
   FastLED.clear(true);
   FastLED.show();
 
+  // Initialize status LEDs for all known devices (show as offline)
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    updateStatusLEDs(i, false, false);
+  }
+
   esp_log_level_set("i2c", ESP_LOG_NONE);  // Suppress I2C logs
   Wire.setTimeOut(50);                     // 50ms timeout for I2C operations
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);

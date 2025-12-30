@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <FastLED.h>
+#include <TFT_eSPI.h>
 #include <Wire.h>
 
 #include "GameEngine.h"
@@ -29,6 +30,12 @@ void checkDevice(uint8_t address, int displayRow);
 bool isDeviceAvailable(uint8_t addr);
 void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated);
 int getLEDIndex(int col, int row);
+
+TFT_eSPI tft;
+
+void enableBacklight() {
+  digitalWrite(TFT_BL, HIGH);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -61,6 +68,13 @@ void setup() {
 
   scanI2CBus();
   Serial.println("Polling devices...");
+
+  // TFT Initialization
+  tft.init();
+  tft.setRotation(0);  // 1 = landscape, 0 = portrait
+  enableBacklight();
+  tft.fillScreen(TFT_BLACK);
+  tft.drawString("TM Hub", 10, 10);
 }
 
 void loop() {
@@ -124,9 +138,14 @@ void checkDevice(uint8_t address, int displayRow) {
     // Print only on change
     if (!isAvailable) {
       Serial.printf("Device (0x%02X): OFFLINE\n", address);
+      tft.drawString("Device 0x" + String(address, HEX) + ": OFFLINE", 10, 30 + displayRow * 20);
     } else {
       Serial.printf("Device (0x%02X): ONLINE - Calibrated: %s\n", address,
                     isCalibrated ? "TRUE" : "FALSE");
+
+      tft.drawString("Device 0x" + String(address, HEX) +
+                         ": ONLINE - Calibrated: " + String(isCalibrated ? "TRUE" : "FALSE"),
+                     10, 30 + displayRow * 20);
     }
   }
 }

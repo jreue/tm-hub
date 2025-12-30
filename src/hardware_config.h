@@ -6,6 +6,9 @@
 #define I2C_SDA_PIN 21  // GREEN
 #define I2C_SCL_PIN 19  // YELLOW
 
+// Hub I2C Address
+#define DATE_I2C_ADDRESS 0x22
+
 // Device Module I2C Addresses
 #define DEVICE_1_ADDR 0x10
 #define DEVICE_2_ADDR 0x11

@@ -4,6 +4,7 @@ LEDStatusHelper::LEDStatusHelper() {
   // Initialize calibration tracking
   for (int i = 0; i < 4; i++) {
     deviceCalibrated[i] = false;
+    calibrationTime[i] = 0;
   }
 }
 
@@ -18,6 +19,11 @@ void LEDStatusHelper::begin() {
 // Row 0: Available (Red = offline, Green = online)
 // Row 1-11: Calibrated animation (when calibrated) or off (when not)
 void LEDStatusHelper::updateStatusLEDs(int col, bool isAvailable, bool isCalibrated) {
+  // Track calibration state change
+  if (isCalibrated && !deviceCalibrated[col]) {
+    // Device just became calibrated - start fill animation
+    calibrationTime[col] = millis();
+  }
   deviceCalibrated[col] = isCalibrated;
 
   if (!isAvailable) {
@@ -46,6 +52,7 @@ void LEDStatusHelper::updateStatusLEDs(int col, bool isAvailable, bool isCalibra
 void LEDStatusHelper::animate() {
   unsigned long now = millis();
   float phase = (now % 2000) / 2000.0 * 2.0 * PI;  // 2 second cycle
+  const unsigned long FILL_DURATION = 1500;        // 1.5 seconds to fill up
 
   for (int col = 0; col < 4; col++) {
     if (deviceCalibrated[col]) {
@@ -56,7 +63,7 @@ void LEDStatusHelper::animate() {
           baseColor = CRGB(128, 0, 128);  // Purple
           break;
         case 1:
-          baseColor = CRGB(0, 255, 0);    // Green
+          baseColor = CRGB(0, 255, 0);  // Green
           break;
         case 2:
           baseColor = CRGB(0, 100, 255);  // Blue
@@ -66,21 +73,43 @@ void LEDStatusHelper::animate() {
           break;
       }
 
-      // Animate rows 1-11 with flowing energy
-      for (int row = 1; row < MATRIX_ROWS; row++) {
-        // Create a wave that flows up the column
-        float rowPhase = phase - (row - 1) * 0.3;        // Negative offset for upward flow
-        float brightness = (sin(rowPhase) + 1.0) / 2.0;  // 0.0 to 1.0
+      unsigned long timeSinceCalibrated = now - calibrationTime[col];
 
-        // Minimum brightness so LEDs don't fully turn off
-        brightness = 0.2 + (brightness * 0.8);  // Range: 0.2 to 1.0
+      if (timeSinceCalibrated < FILL_DURATION) {
+        // Fill animation - gradually light up from bottom to top
+        float fillProgress = (float)timeSinceCalibrated / FILL_DURATION;
+        int maxRow = 1 + (int)(fillProgress * (MATRIX_ROWS - 1));  // Rows 1 to 11
 
-        // Apply brightness to the base color
-        leds[getLEDIndex(col, row)] = CRGB(
-          (uint8_t)(baseColor.r * brightness),
-          (uint8_t)(baseColor.g * brightness),
-          (uint8_t)(baseColor.b * brightness)
-        );
+        for (int row = 1; row < MATRIX_ROWS; row++) {
+          if (row < maxRow) {
+            // Fully lit
+            leds[getLEDIndex(col, row)] = baseColor;
+          } else if (row == maxRow) {
+            // Transitioning row - partial brightness
+            float partialBrightness = (fillProgress * (MATRIX_ROWS - 1)) - (maxRow - 1);
+            leds[getLEDIndex(col, row)] = CRGB((uint8_t)(baseColor.r * partialBrightness),
+                                               (uint8_t)(baseColor.g * partialBrightness),
+                                               (uint8_t)(baseColor.b * partialBrightness));
+          } else {
+            // Not yet lit
+            leds[getLEDIndex(col, row)] = CRGB::Black;
+          }
+        }
+      } else {
+        // Flowing animation - continuous breathing effect
+        for (int row = 1; row < MATRIX_ROWS; row++) {
+          // Create a wave that flows up the column
+          float rowPhase = phase - (row - 1) * 0.3;        // Negative offset for upward flow
+          float brightness = (sin(rowPhase) + 1.0) / 2.0;  // 0.0 to 1.0
+
+          // Minimum brightness so LEDs don't fully turn off
+          brightness = 0.2 + (brightness * 0.8);  // Range: 0.2 to 1.0
+
+          // Apply brightness to the base color
+          leds[getLEDIndex(col, row)] =
+              CRGB((uint8_t)(baseColor.r * brightness), (uint8_t)(baseColor.g * brightness),
+                   (uint8_t)(baseColor.b * brightness));
+        }
       }
     }
   }

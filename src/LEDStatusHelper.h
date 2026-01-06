@@ -14,6 +14,7 @@ class LEDStatusHelper {
 
   private:
     CRGB leds[NUM_LEDS];
-    bool deviceCalibrated[4];  // Track which devices are calibrated
+    bool deviceCalibrated[4];          // Track which devices are calibrated
+    unsigned long calibrationTime[4];  // When each device became calibrated
     int getLEDIndex(int col, int row);
 };

@@ -165,6 +165,9 @@ void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int 
 void loop() {
   // gameEngine.loop();
 
+  // Animate calibrated devices
+  ledHelper.animate();
+
   unsigned long currentMillis = millis();
 }
 

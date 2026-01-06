@@ -10,8 +10,10 @@ class LEDStatusHelper {
     LEDStatusHelper();
     void begin();
     void updateStatusLEDs(int col, bool isAvailable, bool isCalibrated);
+    void animate();
 
   private:
     CRGB leds[NUM_LEDS];
+    bool deviceCalibrated[4];  // Track which devices are calibrated
     int getLEDIndex(int col, int row);
 };

@@ -12,15 +12,15 @@ void LEDStatusHelper::begin() {
 }
 
 // Update LED display for a device
-// Column 0: Available (Red = offline, Green = online)
-// Column 1: Calibrated (Green = TRUE, Orange = FALSE)
-void LEDStatusHelper::updateStatusLEDs(int row, bool isAvailable, bool isCalibrated) {
+// Row 0: Available (Red = offline, Green = online)
+// Row 1: Calibrated (Green = TRUE, Orange = FALSE)
+void LEDStatusHelper::updateStatusLEDs(int col, bool isAvailable, bool isCalibrated) {
   if (!isAvailable) {
-    leds[getLEDIndex(0, row)] = CRGB::Red;    // Availability: Red
-    leds[getLEDIndex(1, row)] = CRGB::Black;  // Status: Off (no data)
+    leds[getLEDIndex(col, 0)] = CRGB::Red;    // Availability: Red
+    leds[getLEDIndex(col, 1)] = CRGB::Black;  // Status: Off (no data)
   } else {
-    leds[getLEDIndex(0, row)] = CRGB::Green;                                // Availability: Green
-    leds[getLEDIndex(1, row)] = isCalibrated ? CRGB::Green : CRGB::Orange;  // Status
+    leds[getLEDIndex(col, 0)] = CRGB::Green;                                // Availability: Green
+    leds[getLEDIndex(col, 1)] = isCalibrated ? CRGB::Green : CRGB::Orange;  // Status
   }
   FastLED.show();
 }

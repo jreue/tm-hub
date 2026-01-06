@@ -9,7 +9,7 @@ class LEDStatusHelper {
   public:
     LEDStatusHelper();
     void begin();
-    void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated);
+    void updateStatusLEDs(int col, bool isAvailable, bool isCalibrated);
 
   private:
     CRGB leds[NUM_LEDS];

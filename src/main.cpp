@@ -1,13 +1,13 @@
 #include <Arduino.h>
-#include <FastLED.h>
 #include <TFT_eSPI.h>
 #include <WiFi.h>
 #include <esp_now.h>
 
 #include "GameEngine.h"
+#include "LEDStatusHelper.h"
 #include "hardware_config.h"
 
-CRGB leds[NUM_LEDS];
+LEDStatusHelper ledHelper;
 
 GameEngine gameEngine;
 
@@ -46,8 +46,6 @@ int getDeviceIndex(uint8_t deviceId) {
 }
 
 // Forward declarations
-void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated);
-int getLEDIndex(int col, int row);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDeviceOffline(int deviceIndex, uint8_t deviceId);
 void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
@@ -62,10 +60,8 @@ void enableBacklight() {
 void setup() {
   Serial.begin(115200);
 
-  FastLED.addLeds<WS2812, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
-  FastLED.setBrightness(25);
-  FastLED.clear(true);
-  FastLED.show();
+  // LED Initialization
+  ledHelper.begin();
 
   // TFT Initialization
   tft.init();
@@ -102,7 +98,7 @@ void setup() {
   for (int i = 0; i < NUM_DEVICES; i++) {
     deviceStates[i].available = false;  // Start as disconnected
     deviceStates[i].calibrated = false;
-    updateStatusLEDs(i, false, false);
+    ledHelper.updateStatusLEDs(i, false, false);
     tft.drawString("Device " + String(KNOWN_DEVICE_IDS[i]) + ": OFFLINE", 10, 30 + i * 20);
   }
   Serial.println("Waiting for devices to connect...");
@@ -174,7 +170,7 @@ void loop() {
 
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
   // Update LEDs
-  updateStatusLEDs(deviceIndex, true, calibrated);
+  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
 
   // Print to terminal
   Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
@@ -188,7 +184,7 @@ void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
 
 void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
   // Update LEDs
-  updateStatusLEDs(deviceIndex, true, calibrated);
+  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
 
   // Print to terminal
   Serial.printf("Device (%d): Calibration changed to %s\n", deviceId,
@@ -203,7 +199,7 @@ void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated)
 
 void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
   // Update LEDs
-  updateStatusLEDs(deviceIndex, false, false);
+  ledHelper.updateStatusLEDs(deviceIndex, false, false);
 
   // Print to terminal
   Serial.printf("Device (%d): OFFLINE\n", deviceId);
@@ -211,30 +207,4 @@ void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
   // Update TFT
   tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
   tft.drawString("Device " + String(deviceId) + ": OFFLINE", 10, 30 + deviceIndex * 20);
-}
-
-// Update LED display for a device
-// Column 0: Available (Red = offline, Green = online)
-// Column 1: Calibrated (Green = TRUE, Orange = FALSE)
-void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated) {
-  if (!isAvailable) {
-    leds[getLEDIndex(0, row)] = CRGB::Red;    // Availability: Red
-    leds[getLEDIndex(1, row)] = CRGB::Black;  // Status: Off (no data)
-  } else {
-    leds[getLEDIndex(0, row)] = CRGB::Green;                                // Availability: Green
-    leds[getLEDIndex(1, row)] = isCalibrated ? CRGB::Green : CRGB::Orange;  // Status
-  }
-  FastLED.show();
-}
-
-// Helper function to get LED index from column and row
-// Handles serpentine/zigzag wiring pattern
-int getLEDIndex(int col, int row) {
-  if (row % 2 == 0) {
-    // Even rows: left to right
-    return row * MATRIX_COLS + col;
-  } else {
-    // Odd rows: right to left (serpentine)
-    return row * MATRIX_COLS + (MATRIX_COLS - 1 - col);
-  }
 }

@@ -1,27 +1,57 @@
 #include <Arduino.h>
 #include <FastLED.h>
 #include <TFT_eSPI.h>
-#include <Wire.h>
+#include <WiFi.h>
+#include <esp_now.h>
 
 #include "GameEngine.h"
-#include "I2CBusManager.h"
 #include "hardware_config.h"
 
 CRGB leds[NUM_LEDS];
 
 GameEngine gameEngine;
-I2CBusManager i2cBusManager;
-unsigned long lastDevicePoll = 0;
-const unsigned long DEVICE_POLL_INTERVAL = 100;  // Poll every 100ms
+
+// Message types
+#define MSG_TYPE_CONNECT 0
+#define MSG_TYPE_STATUS 1
+#define MSG_TYPE_DISCONNECT 2
+
+typedef struct struct_message {
+    uint8_t id;
+    uint8_t messageType;  // 0 = CONNECT, 1 = STATUS, 2 = DISCONNECT
+    bool isCalibrated;
+} struct_message;
+
+struct_message incomingData;
+
+// Device state tracking
+struct DeviceState {
+    bool available = false;
+    bool calibrated = false;
+    unsigned long lastSeen = 0;
+};
+
+const uint8_t KNOWN_DEVICE_IDS[] = {DEVICE_1_ID, DEVICE_2_ID, DEVICE_3_ID};
+const int NUM_DEVICES = sizeof(KNOWN_DEVICE_IDS) / sizeof(KNOWN_DEVICE_IDS[0]);
+DeviceState deviceStates[NUM_DEVICES];
+
+// Helper to get device index from ID
+int getDeviceIndex(uint8_t deviceId) {
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    if (KNOWN_DEVICE_IDS[i] == deviceId) {
+      return i;
+    }
+  }
+  return -1;  // Not found
+}
 
 // Forward declarations
-void handleScanMissing(int index, uint8_t address);
-void handleScanFound(int index, uint8_t address);
-void handleDeviceChecked(const DeviceStateChange& change);
-void handleDeviceOffline(const DeviceStateChange& change);
-void handleDeviceOnline(const DeviceStateChange& change);
 void updateStatusLEDs(int row, bool isAvailable, bool isCalibrated);
 int getLEDIndex(int col, int row);
+void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
+void handleDeviceOffline(int deviceIndex, uint8_t deviceId);
+void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
+void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
 
 TFT_eSPI tft;
 
@@ -44,113 +74,143 @@ void setup() {
   tft.fillScreen(TFT_BLACK);
   tft.drawString("TM Hub", 10, 10);
 
-  esp_log_level_set("i2c", ESP_LOG_NONE);  // Suppress I2C logs
-  Wire.setTimeOut(50);                     // 50ms timeout for I2C operations
-  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  WiFi.mode(WIFI_STA);
+  Serial.println(WiFi.macAddress());
 
-  Serial.println("tm-hub started (I2C mode)");
-  Serial.println("Waiting 2 seconds for devices to initialize...");
-  delay(2000);  // Give devices time to boot and initialize I2C
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
 
-  Serial.printf("tm-hub will now scan for the %d known device(s): ", I2CBusManager::NUM_DEVICES);
-  for (int i = 0; i < I2CBusManager::NUM_DEVICES; i++) {
-    Serial.printf("0x%02X", I2CBusManager::DEVICE_ADDRESSES[i]);
-    if (i < I2CBusManager::NUM_DEVICES - 1)
+  esp_now_register_recv_cb(handleDataReceived);
+
+  Serial.println("Waiting for incoming messages...");
+  Serial.println("================================\n");
+
+  // Initialize device display
+  Serial.println("tm-hub started");
+  Serial.printf("Monitoring %d known device(s): ", NUM_DEVICES);
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
+    if (i < NUM_DEVICES - 1)
       Serial.print(", ");
   }
   Serial.println();
 
-  Serial.println("Scanning the I2C bus...");
-  auto foundDevices = i2cBusManager.scanBus();
-  Serial.printf("Scan complete. Found %d device(s)\n", foundDevices.size());
+  // Initialize all devices as not available
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    deviceStates[i].available = false;  // Start as disconnected
+    deviceStates[i].calibrated = false;
+    updateStatusLEDs(i, false, false);
+    tft.drawString("Device " + String(KNOWN_DEVICE_IDS[i]) + ": OFFLINE", 10, 30 + i * 20);
+  }
+  Serial.println("Waiting for devices to connect...");
+}
 
-  // Check each expected device against scan results
-  for (int i = 0; i < I2CBusManager::NUM_DEVICES; i++) {
-    uint8_t address = I2CBusManager::DEVICE_ADDRESSES[i];
-    bool found = false;
-    for (auto addr : foundDevices) {
-      if (addr == address) {
-        found = true;
-        break;
-      }
-    }
+void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
+  memcpy(&incomingData, incomingDataRaw, sizeof(incomingData));
 
-    if (found) {
-      handleScanFound(i, address);
-    } else {
-      handleScanMissing(i, address);
-    }
+  Serial.print("Data received from MAC: ");
+  for (int i = 0; i < 6; i++) {
+    Serial.printf("%02X", mac[i]);
+    if (i < 5)
+      Serial.print(":");
+  }
+  Serial.println();
+
+  Serial.print("ESP ID: ");
+  Serial.println(incomingData.id);
+  Serial.print("Message Type: ");
+  Serial.println(incomingData.messageType);
+  Serial.print("Calibrated: ");
+  Serial.println(incomingData.isCalibrated ? "Yes" : "No");
+  Serial.println("---");
+
+  // Update device state
+  int deviceIndex = getDeviceIndex(incomingData.id);
+  if (deviceIndex < 0) {
+    return;  // Unknown device
   }
 
-  Serial.println("Polling devices...");
+  bool wasAvailable = deviceStates[deviceIndex].available;
+  bool wasCalibrated = deviceStates[deviceIndex].calibrated;
+
+  // Handle different message types
+  switch (incomingData.messageType) {
+    case MSG_TYPE_CONNECT:
+      deviceStates[deviceIndex].available = true;
+      deviceStates[deviceIndex].calibrated = incomingData.isCalibrated;
+      deviceStates[deviceIndex].lastSeen = millis();
+      handleDeviceOnline(deviceIndex, incomingData.id, incomingData.isCalibrated);
+      break;
+
+    case MSG_TYPE_STATUS:
+      deviceStates[deviceIndex].available = true;
+      deviceStates[deviceIndex].calibrated = incomingData.isCalibrated;
+      deviceStates[deviceIndex].lastSeen = millis();
+
+      // Only trigger handlers if state actually changed
+      if (!wasAvailable) {
+        handleDeviceOnline(deviceIndex, incomingData.id, incomingData.isCalibrated);
+      } else if (wasCalibrated != incomingData.isCalibrated) {
+        handleCalibrationChange(deviceIndex, incomingData.id, incomingData.isCalibrated);
+      }
+      break;
+
+    case MSG_TYPE_DISCONNECT:
+      deviceStates[deviceIndex].available = false;
+      deviceStates[deviceIndex].calibrated = false;
+      handleDeviceOffline(deviceIndex, incomingData.id);
+      break;
+  }
 }
 
 void loop() {
   // gameEngine.loop();
 
   unsigned long currentMillis = millis();
-
-  // Check all modules at the defined interval
-  if (currentMillis - lastDevicePoll >= DEVICE_POLL_INTERVAL) {
-    lastDevicePoll = currentMillis;
-
-    auto stateChanges = i2cBusManager.checkAllDevices();
-    for (const auto& change : stateChanges) {
-      handleDeviceChecked(change);
-    }
-  }
 }
 
-void handleScanMissing(int index, uint8_t address) {
-  // Update LED to red
-  updateStatusLEDs(index, false, false);
+void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
+  // Update LEDs
+  updateStatusLEDs(deviceIndex, true, calibrated);
 
   // Print to terminal
-  Serial.printf("Address 0x%02X not found\n", address);
+  Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
 
-  // Print to TFT
-  tft.drawString("Address 0x" + String(address, HEX) + " not found", 10, 30 + index * 20);
+  // Update TFT
+  tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
+  tft.drawString("Device " + String(deviceId) +
+                     ": ONLINE - Calibrated: " + String(calibrated ? "TRUE" : "FALSE"),
+                 10, 30 + deviceIndex * 20);
 }
 
-void handleScanFound(int index, uint8_t address) {
-  // Update LED to green
-  updateStatusLEDs(index, true, false);
+void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
+  // Update LEDs
+  updateStatusLEDs(deviceIndex, true, calibrated);
 
   // Print to terminal
-  Serial.printf("Address 0x%02X found\n", address);
+  Serial.printf("Device (%d): Calibration changed to %s\n", deviceId,
+                calibrated ? "TRUE" : "FALSE");
 
-  // Print to TFT
-  tft.drawString("Address 0x" + String(address, HEX) + " found", 10, 30 + index * 20);
+  // Update TFT
+  tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
+  tft.drawString("Device " + String(deviceId) +
+                     ": ONLINE - Calibrated: " + String(calibrated ? "TRUE" : "FALSE"),
+                 10, 30 + deviceIndex * 20);
 }
 
-void handleDeviceChecked(const DeviceStateChange& change) {
-  updateStatusLEDs(change.index, change.available, change.calibrated);
+void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
+  // Update LEDs
+  updateStatusLEDs(deviceIndex, false, false);
 
-  if (!change.available) {
-    handleDeviceOffline(change);
-  } else {
-    handleDeviceOnline(change);
-  }
-}
-
-void handleDeviceOffline(const DeviceStateChange& change) {
   // Print to terminal
-  Serial.printf("Device (0x%02X): OFFLINE\n", change.address);
+  Serial.printf("Device (%d): OFFLINE\n", deviceId);
 
-  // Print to TFT
-  tft.drawString("Device 0x" + String(change.address, HEX) + ": OFFLINE", 10,
-                 30 + change.index * 20);
-}
-
-void handleDeviceOnline(const DeviceStateChange& change) {
-  // Print to terminal
-  Serial.printf("Device (0x%02X): ONLINE - Calibrated: %s\n", change.address,
-                change.calibrated ? "TRUE" : "FALSE");
-
-  // Print to TFT
-  tft.drawString("Device 0x" + String(change.address, HEX) +
-                     ": ONLINE - Calibrated: " + String(change.calibrated ? "TRUE" : "FALSE"),
-                 10, 30 + change.index * 20);
+  // Update TFT
+  tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
+  tft.drawString("Device " + String(deviceId) + ": OFFLINE", 10, 30 + deviceIndex * 20);
 }
 
 // Update LED display for a device

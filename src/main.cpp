@@ -15,14 +15,29 @@ GameEngine gameEngine;
 #define MSG_TYPE_CONNECT 0
 #define MSG_TYPE_STATUS 1
 #define MSG_TYPE_DISCONNECT 2
+#define MSG_TYPE_DATE_UPDATE 3
 
-typedef struct struct_message {
+// Common header for all messages
+struct EspNowHeader {
     uint8_t id;
-    uint8_t messageType;  // 0 = CONNECT, 1 = STATUS, 2 = DISCONNECT
-    bool isCalibrated;
-} struct_message;
+    uint8_t messageType;
+};
 
-struct_message incomingData;
+// Device message (connection/calibration status)
+struct DeviceMessage {
+    uint8_t id;
+    uint8_t messageType;
+    bool isCalibrated;
+};
+
+// Date module message
+struct DateMessage {
+    uint8_t id;
+    uint8_t messageType;
+    uint8_t month;
+    uint8_t day;
+    uint16_t year;
+};
 
 // Device state tracking
 struct DeviceState {
@@ -46,10 +61,12 @@ int getDeviceIndex(uint8_t deviceId) {
 }
 
 // Forward declarations
+void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
+void handleDeviceMessage(DeviceMessage msg);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDeviceOffline(int deviceIndex, uint8_t deviceId);
-void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
-void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
+void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
+void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
 
 TFT_eSPI tft;
 
@@ -105,7 +122,9 @@ void setup() {
 }
 
 void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
-  memcpy(&incomingData, incomingDataRaw, sizeof(incomingData));
+  // Step 1: Read just the header to determine message type
+  EspNowHeader header;
+  memcpy(&header, incomingDataRaw, sizeof(EspNowHeader));
 
   Serial.print("Data received from MAC: ");
   for (int i = 0; i < 6; i++) {
@@ -116,15 +135,28 @@ void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int 
   Serial.println();
 
   Serial.print("ESP ID: ");
-  Serial.println(incomingData.id);
+  Serial.println(header.id);
   Serial.print("Message Type: ");
-  Serial.println(incomingData.messageType);
-  Serial.print("Calibrated: ");
-  Serial.println(incomingData.isCalibrated ? "Yes" : "No");
+  Serial.println(header.messageType);
   Serial.println("---");
 
+  if (header.messageType == MSG_TYPE_CONNECT || header.messageType == MSG_TYPE_STATUS ||
+      header.messageType == MSG_TYPE_DISCONNECT) {
+    // Step 2: Deserialize device message
+    DeviceMessage deviceMsg;
+    memcpy(&deviceMsg, incomingDataRaw, sizeof(DeviceMessage));
+    handleDeviceMessage(deviceMsg);
+  } else if (header.messageType == MSG_TYPE_DATE_UPDATE) {
+    // Step 2: Deserialize date message
+    DateMessage dateMsg;
+    memcpy(&dateMsg, incomingDataRaw, sizeof(DateMessage));
+    handleDateChanged(dateMsg.month, dateMsg.day, dateMsg.year);
+  }
+}
+
+void handleDeviceMessage(DeviceMessage msg) {
   // Update device state
-  int deviceIndex = getDeviceIndex(incomingData.id);
+  int deviceIndex = getDeviceIndex(msg.id);
   if (deviceIndex < 0) {
     return;  // Unknown device
   }
@@ -133,31 +165,31 @@ void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int 
   bool wasCalibrated = deviceStates[deviceIndex].calibrated;
 
   // Handle different message types
-  switch (incomingData.messageType) {
+  switch (msg.messageType) {
     case MSG_TYPE_CONNECT:
       deviceStates[deviceIndex].available = true;
-      deviceStates[deviceIndex].calibrated = incomingData.isCalibrated;
+      deviceStates[deviceIndex].calibrated = msg.isCalibrated;
       deviceStates[deviceIndex].lastSeen = millis();
-      handleDeviceOnline(deviceIndex, incomingData.id, incomingData.isCalibrated);
+      handleDeviceOnline(deviceIndex, msg.id, msg.isCalibrated);
       break;
 
     case MSG_TYPE_STATUS:
       deviceStates[deviceIndex].available = true;
-      deviceStates[deviceIndex].calibrated = incomingData.isCalibrated;
+      deviceStates[deviceIndex].calibrated = msg.isCalibrated;
       deviceStates[deviceIndex].lastSeen = millis();
 
       // Only trigger handlers if state actually changed
       if (!wasAvailable) {
-        handleDeviceOnline(deviceIndex, incomingData.id, incomingData.isCalibrated);
-      } else if (wasCalibrated != incomingData.isCalibrated) {
-        handleCalibrationChange(deviceIndex, incomingData.id, incomingData.isCalibrated);
+        handleDeviceOnline(deviceIndex, msg.id, msg.isCalibrated);
+      } else if (wasCalibrated != msg.isCalibrated) {
+        handleDeviceCalibrationChange(deviceIndex, msg.id, msg.isCalibrated);
       }
       break;
 
     case MSG_TYPE_DISCONNECT:
       deviceStates[deviceIndex].available = false;
       deviceStates[deviceIndex].calibrated = false;
-      handleDeviceOffline(deviceIndex, incomingData.id);
+      handleDeviceOffline(deviceIndex, msg.id);
       break;
   }
 }
@@ -169,6 +201,17 @@ void loop() {
   ledHelper.animate();
 
   unsigned long currentMillis = millis();
+}
+
+void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
+  // Print to terminal
+  Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
+
+  // Update TFT (at bottom of 320x480 portrait display)
+  tft.setTextSize(2);
+  tft.fillRect(0, 440, tft.width(), 40, TFT_BLACK);
+  tft.drawString("Date: " + String(month) + "/" + String(day) + "/" + String(year), 10, 450);
+  tft.setTextSize(1);  // Reset to default size
 }
 
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
@@ -185,7 +228,7 @@ void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
                  10, 30 + deviceIndex * 20);
 }
 
-void handleCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
+void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
   // Update LEDs
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
 

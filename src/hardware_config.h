@@ -19,3 +19,8 @@
 #define NUM_LEDS 48
 #define MATRIX_COLS 4
 #define MATRIX_ROWS 12
+
+// ====================
+// ESP-NOW Configuration
+// ====================
+#define SCANNER_MAC_ADDRESS {0x44, 0x1D, 0x64, 0xF7, 0x4C, 0xEC}

@@ -16,6 +16,7 @@ GameEngine gameEngine;
 #define MSG_TYPE_STATUS 1
 #define MSG_TYPE_DISCONNECT 2
 #define MSG_TYPE_DATE_UPDATE 3
+#define MSG_TYPE_SCANNER_CONNECTED 4
 
 // Common header for all messages
 struct EspNowHeader {
@@ -28,6 +29,12 @@ struct DeviceMessage {
     uint8_t id;
     uint8_t messageType;
     bool isCalibrated;
+};
+
+// Scanner message
+struct ScannerMessage {
+    uint8_t id;
+    uint8_t messageType;
 };
 
 // Date module message
@@ -60,13 +67,19 @@ int getDeviceIndex(uint8_t deviceId) {
   return -1;  // Not found
 }
 
+uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
+
 // Forward declarations
 void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
+
 void handleDeviceMessage(DeviceMessage msg);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDeviceOffline(int deviceIndex, uint8_t deviceId);
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
+
+void handleScannerMessage(ScannerMessage msg);
+void handleScannerConnected();
 
 TFT_eSPI tft;
 
@@ -151,7 +164,32 @@ void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int 
     DateMessage dateMsg;
     memcpy(&dateMsg, incomingDataRaw, sizeof(DateMessage));
     handleDateChanged(dateMsg.month, dateMsg.day, dateMsg.year);
+  } else if (header.messageType == MSG_TYPE_SCANNER_CONNECTED) {
+    // Step 2: Deserialize scanner message
+    ScannerMessage scannerMsg;
+    memcpy(&scannerMsg, incomingDataRaw, sizeof(ScannerMessage));
+    handleScannerMessage(scannerMsg);
+  } else {
+    Serial.println("Unknown message type received.");
   }
+}
+
+void handleScannerMessage(ScannerMessage msg) {
+  Serial.println("Scanner connected message received.");
+  switch (msg.messageType) {
+    case MSG_TYPE_SCANNER_CONNECTED:
+      handleScannerConnected();
+      break;
+    default:
+      Serial.println("Unknown scanner message type.");
+      return;
+  }
+}
+
+void handleScannerConnected() {
+  Serial.println("Scanner has connected!");
+  tft.fillRect(0, 200, tft.width(), 20, TFT_BLACK);
+  tft.drawString("Scanner: CONNECTED", 10, 200);
 }
 
 void handleDeviceMessage(DeviceMessage msg) {

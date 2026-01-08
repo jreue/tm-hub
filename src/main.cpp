@@ -1,13 +1,14 @@
 #include <Arduino.h>
-#include <TFT_eSPI.h>
 #include <WiFi.h>
 #include <esp_now.h>
 
 #include "GameEngine.h"
 #include "LEDStatusHelper.h"
+#include "DisplayController.h"
 #include "hardware_config.h"
 
 LEDStatusHelper ledHelper;
+DisplayController displayController;
 
 GameEngine gameEngine;
 
@@ -85,24 +86,14 @@ void updateDeviceStatusDisplay();
 void updateDeviceConnection(int count);
 void updateDeviceCalibration(int count);
 
-TFT_eSPI tft;
-
-void enableBacklight() {
-  digitalWrite(TFT_BL, HIGH);
-}
-
 void setup() {
   Serial.begin(115200);
 
   // LED Initialization
   ledHelper.begin();
 
-  // TFT Initialization
-  tft.init();
-  tft.setRotation(0);  // 1 = landscape, 0 = portrait
-  enableBacklight();
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("TM Hub", 10, 10);
+  // Display Initialization
+  displayController.begin(NUM_DEVICES);
 
   WiFi.mode(WIFI_STA);
   Serial.println(WiFi.macAddress());
@@ -195,8 +186,7 @@ void handleScannerMessage(ScannerMessage msg) {
 
 void handleScannerConnected() {
   Serial.println("Scanner has connected!");
-  tft.fillRect(0, 200, tft.width(), 20, TFT_BLACK);
-  tft.drawString("Scanner: CONNECTED", 10, 200);
+  displayController.updateScannerStatus(true);
 }
 
 void handleDeviceMessage(DeviceMessage msg) {
@@ -252,11 +242,8 @@ void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
   // Print to terminal
   Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
 
-  // Update TFT (at bottom of 320x480 portrait display)
-  tft.setTextSize(2);
-  tft.fillRect(0, 440, tft.width(), 40, TFT_BLACK);
-  tft.drawString("Date: " + String(month) + "/" + String(day) + "/" + String(year), 10, 450);
-  tft.setTextSize(1);  // Reset to default size
+  // Update display
+  displayController.updateDate(month, day, year);
 }
 
 void updateDeviceStatusDisplay() {
@@ -279,13 +266,11 @@ void updateDeviceStatusDisplay() {
 }
 
 void updateDeviceConnection(int count) {
-  tft.fillRect(0, 30, tft.width(), 20, TFT_BLACK);
-  tft.drawString("Shield Modules Online: " + String(count) + " / 8", 10, 30);
+  displayController.updateDeviceConnection(count);
 }
 
 void updateDeviceCalibration(int count) {
-  tft.fillRect(0, 50, tft.width(), 20, TFT_BLACK);
-  tft.drawString("Shield Modules Calibrated: " + String(count) + " / 8", 10, 50);
+  displayController.updateDeviceCalibration(count);
 }
 
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {

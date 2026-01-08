@@ -81,6 +81,10 @@ void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
 void handleScannerMessage(ScannerMessage msg);
 void handleScannerConnected();
 
+void updateDeviceStatusDisplay();
+void updateDeviceConnection(int count);
+void updateDeviceCalibration(int count);
+
 TFT_eSPI tft;
 
 void enableBacklight() {
@@ -129,8 +133,11 @@ void setup() {
     deviceStates[i].available = false;  // Start as disconnected
     deviceStates[i].calibrated = false;
     ledHelper.updateStatusLEDs(i, false, false);
-    tft.drawString("Device " + String(KNOWN_DEVICE_IDS[i]) + ": OFFLINE", 10, 30 + i * 20);
   }
+
+  // Display initial device status summary
+  updateDeviceStatusDisplay();
+
   Serial.println("Waiting for devices to connect...");
 }
 
@@ -252,6 +259,35 @@ void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
   tft.setTextSize(1);  // Reset to default size
 }
 
+void updateDeviceStatusDisplay() {
+  // Count online and calibrated devices
+  int onlineCount = 0;
+  int calibratedCount = 0;
+
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    if (deviceStates[i].available) {
+      onlineCount++;
+      if (deviceStates[i].calibrated) {
+        calibratedCount++;
+      }
+    }
+  }
+
+  // Update TFT displays
+  updateDeviceConnection(onlineCount);
+  updateDeviceCalibration(calibratedCount);
+}
+
+void updateDeviceConnection(int count) {
+  tft.fillRect(0, 30, tft.width(), 20, TFT_BLACK);
+  tft.drawString("Shield Modules Online: " + String(count) + " / 8", 10, 30);
+}
+
+void updateDeviceCalibration(int count) {
+  tft.fillRect(0, 50, tft.width(), 20, TFT_BLACK);
+  tft.drawString("Shield Modules Calibrated: " + String(count) + " / 8", 10, 50);
+}
+
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
   // Update LEDs
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
@@ -259,11 +295,8 @@ void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
   // Print to terminal
   Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
 
-  // Update TFT
-  tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
-  tft.drawString("Device " + String(deviceId) +
-                     ": ONLINE - Calibrated: " + String(calibrated ? "TRUE" : "FALSE"),
-                 10, 30 + deviceIndex * 20);
+  // Update TFT summary
+  updateDeviceStatusDisplay();
 }
 
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
@@ -274,11 +307,8 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
   Serial.printf("Device (%d): Calibration changed to %s\n", deviceId,
                 calibrated ? "TRUE" : "FALSE");
 
-  // Update TFT
-  tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
-  tft.drawString("Device " + String(deviceId) +
-                     ": ONLINE - Calibrated: " + String(calibrated ? "TRUE" : "FALSE"),
-                 10, 30 + deviceIndex * 20);
+  // Update TFT summary
+  updateDeviceStatusDisplay();
 }
 
 void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
@@ -288,7 +318,6 @@ void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
   // Print to terminal
   Serial.printf("Device (%d): OFFLINE\n", deviceId);
 
-  // Update TFT
-  tft.fillRect(0, 30 + deviceIndex * 20, tft.width(), 20, TFT_BLACK);
-  tft.drawString("Device " + String(deviceId) + ": OFFLINE", 10, 30 + deviceIndex * 20);
+  // Update TFT summary
+  updateDeviceStatusDisplay();
 }

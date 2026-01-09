@@ -170,15 +170,15 @@ void DisplayController::updateShieldModules(int online, int calibrated) {
 }
 
 void DisplayController::updateShieldPower(int calibrated, int total) {
-  // Calculate percentage
-  int percentage = (total > 0) ? (calibrated * 100) / total : 0;
+  // Calculate percentage with decimal precision
+  float percentage = (total > 0) ? (calibrated * 100.0f) / total : 0.0f;
 
-  // Format the percentage string
-  char buf[8];
-  sprintf(buf, "%d%%", percentage);
+  // Format the percentage string with 1 decimal place
+  char buf[10];
+  sprintf(buf, "%.1f%%", percentage);
 
   // Clear the area where the power percentage will be drawn
-  tft.fillRect(240, 252, 50, 15, TFT_BLACK);
+  tft.fillRect(240, 252, 60, 15, TFT_BLACK);
 
   // Draw the new power percentage
   tft.setTextColor(TFT_WHITE);
@@ -186,10 +186,43 @@ void DisplayController::updateShieldPower(int calibrated, int total) {
   tft.setTextDatum(TR_DATUM);
   tft.drawString(buf, 286, 252);
   tft.setTextDatum(TL_DATUM);
+
+  // Update detection risk based on shield power
+  updateDetectionRisk(percentage);
 }
 
-void DisplayController::updateDetectionRisk(const String& level) {
-  // Stub - implementation removed
+void DisplayController::updateDetectionRisk(float percentage) {
+  // Determine risk level based on shield power (inverse relationship)
+  const char* riskLevel;
+  if (percentage < 12.5f) {
+    riskLevel = "CRITICAL";
+  } else if (percentage < 25.0f) {
+    riskLevel = "SEVERE";
+  } else if (percentage < 37.5f) {
+    riskLevel = "HIGH";
+  } else if (percentage < 50.0f) {
+    riskLevel = "ELEVATED";
+  } else if (percentage < 62.5f) {
+    riskLevel = "MODERATE";
+  } else if (percentage < 75.0f) {
+    riskLevel = "GUARDED";
+  } else if (percentage < 87.5f) {
+    riskLevel = "LOW";
+  } else if (percentage < 100.0f) {
+    riskLevel = "MINIMAL";
+  } else {
+    riskLevel = "SECURE";
+  }
+
+  // Clear the area where the risk level will be drawn
+  tft.fillRect(200, 285, 100, 15, TFT_BLACK);
+
+  // Draw the new risk level
+  tft.setTextColor(0xF9C6);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString(riskLevel, 286, 285);
+  tft.setTextDatum(TL_DATUM);
 }
 
 void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds) {

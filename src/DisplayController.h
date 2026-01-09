@@ -18,7 +18,6 @@ class DisplayController {
     void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);
     void updateCorePower(const String& status);
     void updateShieldModules(int online, int calibrated);
-    void updateDetectionRisk(const String& level);
     void updateInterceptWindow(int hours, int minutes, int seconds);
     void updateServiceLink(bool connected);
 
@@ -29,4 +28,5 @@ class DisplayController {
     void renderModuleConnectionProgress(int count);
     void renderModuleCalibrationProgress(int count);
     void updateShieldPower(int calibrated, int total);
+    void updateDetectionRisk(float percentage);
 };

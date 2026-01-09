@@ -27,4 +27,6 @@ class DisplayController {
     TFT_eSPI tft;
     int totalDevices;
     void enableBacklight();
+    void renderModuleConnectionProgress(int count);
+    void renderModuleCalibrationProgress(int count);
 };

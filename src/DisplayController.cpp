@@ -80,42 +80,38 @@ void DisplayController::begin(int deviceCount) {
   // CorePowerValue
   tft.setTextColor(0xFFFF);
   tft.drawString(CorePowerValue_text, 240, 421);
-  // ModuleValue1
-  tft.fillRect(180, 181, 10, 20, COLOR_PROGRESS_FILLED);
-  // ModuleValue2
-  tft.fillRect(194, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // ModuleValue3
-  tft.fillRect(208, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // ModuleValue4
-  tft.fillRect(222, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // ModuleValue5
-  tft.fillRect(236, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // ModuleValue6
-  tft.fillRect(250, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // ModuleValue7
-  tft.fillRect(264, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // ModuleValue8
-  tft.fillRect(278, 181, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated1Value
-  tft.fillRect(180, 214, 10, 20, COLOR_PROGRESS_FILLED);
-  // Calibrated2Value
-  tft.fillRect(194, 214, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated3Value
-  tft.fillRect(208, 214, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated4Value
-  tft.fillRect(222, 214, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated5Value
-  tft.fillRect(236, 214, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated6Value
-  tft.fillRect(250, 214, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated7Value
-  tft.fillRect(264, 214, 10, 20, COLOR_PROGRESS_EMPTY);
-  // Calibrated8Value
-  tft.fillRect(278, 214, 10, 20, COLOR_PROGRESS_EMPTY);
+
+  // Initialize progress indicators with default state (0)
+  renderModuleConnectionProgress(0);
+  renderModuleCalibrationProgress(0);
 }
 
 void DisplayController::enableBacklight() {
   digitalWrite(TFT_BL, HIGH);
+}
+
+void DisplayController::renderModuleConnectionProgress(int count) {
+  const int xPositions[] = {180, 194, 208, 222, 236, 250, 264, 278};
+  const int y = 181;
+  const int width = 10;
+  const int height = 20;
+
+  for (int i = 0; i < 8; i++) {
+    uint16_t color = (i < count) ? COLOR_PROGRESS_FILLED : COLOR_PROGRESS_EMPTY;
+    tft.fillRect(xPositions[i], y, width, height, color);
+  }
+}
+
+void DisplayController::renderModuleCalibrationProgress(int count) {
+  const int xPositions[] = {180, 194, 208, 222, 236, 250, 264, 278};
+  const int y = 214;
+  const int width = 10;
+  const int height = 20;
+
+  for (int i = 0; i < 8; i++) {
+    uint16_t color = (i < count) ? COLOR_PROGRESS_FILLED : COLOR_PROGRESS_EMPTY;
+    tft.fillRect(xPositions[i], y, width, height, color);
+  }
 }
 
 void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16_t year) {
@@ -168,7 +164,8 @@ void DisplayController::updateCorePower(const String& status) {
 }
 
 void DisplayController::updateShieldModules(int online, int calibrated) {
-  // Stub - implementation removed
+  renderModuleConnectionProgress(online);
+  renderModuleCalibrationProgress(calibrated);
 }
 
 void DisplayController::updateShieldStatus(const String& status) {

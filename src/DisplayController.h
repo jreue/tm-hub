@@ -16,7 +16,7 @@ class DisplayController {
   public:
     DisplayController();
     void begin(int deviceCount);
-    void updateDestinationDate(uint8_t month, uint8_t day, uint16_t year);
+    void updateDestinationDate(uint8_t month = 0, uint8_t day = 0, uint16_t year = 0);
     void updateCurrentDate(uint8_t month, uint8_t day, uint16_t year);
     void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);
     void updateCorePower(const String& status);

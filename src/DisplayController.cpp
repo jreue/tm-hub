@@ -30,10 +30,7 @@ void DisplayController::begin(int deviceCount) {
   renderShieldChrome();
   renderShieldLabels();
 
-  // DestinationValue
-  tft.setTextColor(TFT_YELLOW);
-  tft.drawString(DestinationValue_text, 219, 44);
-
+  updateDestinationDate();
   updateCurrentDate(1, 1, 2056);
   updateLastDeparture(12, 25, 2025);
 
@@ -138,9 +135,13 @@ void DisplayController::renderModuleCalibrationProgress(int count) {
 }
 
 void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16_t year) {
-  // Format the date string (MM/DD/YYYY)
+  // Format the date string (MM/DD/YYYY or --/--/---- if no values provided)
   char buf[16];
-  sprintf(buf, "%02d/%02d/%04d", month, day, year);
+  if (month == 0 && day == 0 && year == 0) {
+    sprintf(buf, "--/--/----");
+  } else {
+    sprintf(buf, "%02d/%02d/%04d", month, day, year);
+  }
 
   // Clear the area where the date will be drawn
   // Using approximate width based on FreeMonoBold9pt7b font (~90 pixels for date string)

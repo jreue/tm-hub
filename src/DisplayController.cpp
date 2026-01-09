@@ -12,6 +12,7 @@ void DisplayController::begin(int deviceCount) {
   tft.fillScreen(TFT_BLACK);
 
   // Draw title
+  tft.setFreeFont(&FreeSansBold9pt7b);
   tft.setTextColor(TFT_WHITE);
   tft.drawString("TIME DISPLACEMENT CONSOLE", 10, 10);
   tft.drawLine(10, 25, tft.width() - 10, 25, TFT_WHITE);
@@ -45,6 +46,7 @@ void DisplayController::renderSystemResultItem(const char* label, const char* va
   // Clear the line
   tft.fillRect(10, y, tft.width() - 20, 20, TFT_BLACK);
 
+  tft.setFreeFont(&FreeSansBold9pt7b);
   // Draw label (left-aligned)
   tft.setTextColor(TFT_CYAN);
   tft.drawString(label + String(":"), 10, y);

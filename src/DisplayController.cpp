@@ -166,10 +166,26 @@ void DisplayController::updateCorePower(const String& status) {
 void DisplayController::updateShieldModules(int online, int calibrated) {
   renderModuleConnectionProgress(online);
   renderModuleCalibrationProgress(calibrated);
+  updateShieldPower(calibrated, 8);
 }
 
-void DisplayController::updateShieldStatus(const String& status) {
-  // Stub - implementation removed
+void DisplayController::updateShieldPower(int calibrated, int total) {
+  // Calculate percentage
+  int percentage = (total > 0) ? (calibrated * 100) / total : 0;
+
+  // Format the percentage string
+  char buf[8];
+  sprintf(buf, "%d%%", percentage);
+
+  // Clear the area where the power percentage will be drawn
+  tft.fillRect(240, 252, 50, 15, TFT_BLACK);
+
+  // Draw the new power percentage
+  tft.setTextColor(TFT_WHITE);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString(buf, 286, 252);
+  tft.setTextDatum(TL_DATUM);
 }
 
 void DisplayController::updateDetectionRisk(const String& level) {

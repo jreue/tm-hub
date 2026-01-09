@@ -32,9 +32,10 @@ void DisplayController::begin(int deviceCount) {
   currentY += SystemResults::moduleResultCount * 25 + 10;
 
   renderRiskResults(currentY, 25);
-  currentY += SystemResults::riskResultCount * 25 + 10;
 
-  renderSystemResults(currentY, 25);
+  // Render system results at bottom of screen
+  // FreeSansBold9pt7b needs ~20px clearance above baseline, so start at 450
+  renderSystemResults(430, 25);
 }
 
 void DisplayController::enableBacklight() {
@@ -123,11 +124,7 @@ void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t
 
 void DisplayController::updateCorePower(const String& status) {
   SystemResults::systemResults[SystemResults::IDX_SYSTEM_CORE_POWER].value = status;
-  int32_t y = 35 +
-              (SystemResults::dateResultCount + SystemResults::moduleResultCount +
-               SystemResults::riskResultCount) *
-                  25 +
-              30 + SystemResults::IDX_SYSTEM_CORE_POWER * 25;
+  int32_t y = 450 + SystemResults::IDX_SYSTEM_CORE_POWER * 25;
   renderSystemResultItem(
       SystemResults::systemResults[SystemResults::IDX_SYSTEM_CORE_POWER].label.c_str(),
       SystemResults::systemResults[SystemResults::IDX_SYSTEM_CORE_POWER].value.c_str(),
@@ -211,12 +208,7 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
 void DisplayController::updateServiceLink(bool connected) {
   SystemResults::systemResults[SystemResults::IDX_SYSTEM_SERVICE_LINK].value =
       connected ? "CONNECTED" : "DISCONNECTED";
-  int32_t systemStartY = 35 +
-                         (SystemResults::dateResultCount + SystemResults::moduleResultCount +
-                          SystemResults::riskResultCount) *
-                             25 +
-                         30;
-  int32_t y = systemStartY + SystemResults::IDX_SYSTEM_SERVICE_LINK * 25;
+  int32_t y = 450 + SystemResults::IDX_SYSTEM_SERVICE_LINK * 25;
   renderSystemResultItem(
       SystemResults::systemResults[SystemResults::IDX_SYSTEM_SERVICE_LINK].label.c_str(),
       SystemResults::systemResults[SystemResults::IDX_SYSTEM_SERVICE_LINK].value.c_str(),

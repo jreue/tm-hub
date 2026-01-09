@@ -18,26 +18,26 @@ void DisplayController::begin(int deviceCount) {
   const char* ServiceLinkValue_text = "DISCONNECTED";
 
   // Header Text
-  tft.setTextColor(0x3FE3);
+  tft.setTextColor(COLOR_NEON_GREEN);
   tft.setTextSize(1);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("TIME DISPLACEMENT CONSOLE", 23, 7);
   // Header Underline
-  tft.drawLine(10, 30, 310, 30, 0x3FE3);
+  tft.drawLine(10, 30, 310, 30, COLOR_NEON_GREEN);
   // Core Power Label
   tft.drawString("Core Power", 15, 421);
   // Service Link Label
   tft.drawString("Service Link", 15, 449);
   // Bottom Line
-  tft.drawLine(10, 410, 310, 410, 0x3FE3);
+  tft.drawLine(10, 410, 310, 410, COLOR_NEON_GREEN);
   // Intercept Window Label
+  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
   tft.drawString("INTERCEPT WINDOW", 72, 336);
   // Intercept Time
-  tft.setTextColor(0xFD80);
   tft.setFreeFont(&FreeMonoBold24pt7b);
   tft.drawString("--:--:--", 48, 356);
   // Destination Label
-  tft.setTextColor(0x3FE2);
+  tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("Destination Date", 15, 44);
   // Current Label
@@ -45,14 +45,14 @@ void DisplayController::begin(int deviceCount) {
   // Last Departure Label
   tft.drawString("Last Departure", 15, 100);
   // Shield Border
-  tft.drawRoundRect(10, 149, 300, 174, 5, 0x3FE2);
+  tft.drawRoundRect(10, 149, 300, 174, 5, COLOR_NEON_GREEN);
   // Shield Container
-  tft.fillRoundRect(86, 140, 149, 18, 6, 0x3FE2);
+  tft.fillRoundRect(86, 140, 149, 18, 6, COLOR_NEON_GREEN);
   // Shielding Header
-  tft.setTextColor(0x0);
+  tft.setTextColor(TFT_BLACK);
   tft.drawString("SHIELDING", 111, 141);
   // Modules Label
-  tft.setTextColor(0x3FE2);
+  tft.setTextColor(COLOR_NEON_GREEN);
   tft.drawString("Modules", 25, 184);
   // Calibrated Label
   tft.drawString("Calibrated", 25, 218);
@@ -76,7 +76,7 @@ void DisplayController::begin(int deviceCount) {
   tft.drawString(CorePowerValue_text, 240, 421);
 
   // ServiceLinkValue
-  tft.setTextColor(0xF9C6);
+  tft.setTextColor(COLOR_WARNING_ORANGE);
   tft.drawString(ServiceLinkValue_text, 174, 449);
 
   // Initialize progress indicators with default state (0)
@@ -216,7 +216,7 @@ void DisplayController::updateDetectionRisk(float percentage) {
   tft.fillRect(200, 285, 100, 15, TFT_BLACK);
 
   // Draw the new risk level
-  tft.setTextColor(0xF9C6);
+  tft.setTextColor(COLOR_WARNING_ORANGE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.setTextDatum(TR_DATUM);
   tft.drawString(riskLevel, 286, 285);
@@ -232,14 +232,14 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
   tft.fillRect(48, 356, 224, 40, TFT_BLACK);
 
   // Draw the new intercept window time
-  tft.setTextColor(0xFD80);
+  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
   tft.setFreeFont(&FreeMonoBold24pt7b);
   tft.drawString(buf, 48, 356);
 }
 
 void DisplayController::updateServiceLink(bool connected) {
   const char* status = connected ? "ESTABLISHED" : "DISCONNECTED";
-  const uint16_t color = connected ? TFT_WHITE : 0xF9C6;
+  const uint16_t color = connected ? TFT_WHITE : COLOR_WARNING_ORANGE;
   // Clear the area where the service link text will be drawn
   tft.fillRect(174, 451, 140, 15, TFT_BLACK);
 

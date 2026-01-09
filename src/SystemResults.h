@@ -1,9 +1,11 @@
 #pragma once
 #include <Arduino.h>
+#include <TFT_eSPI.h>
 
 struct SystemStatus {
     String label;
     String value;
+    uint16_t color;
 };
 
 class SystemResults {

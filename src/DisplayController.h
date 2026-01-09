@@ -24,5 +24,6 @@ class DisplayController {
     int totalDevices;
     void enableBacklight();
     void renderSystemResults();
-    void renderSystemResultItem(const char* label, const char* value, int32_t y);
+    void renderSystemResultItem(const char* label, const char* value, uint16_t valueColor,
+                                int32_t y);
 };

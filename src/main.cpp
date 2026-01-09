@@ -58,6 +58,10 @@ const uint8_t KNOWN_DEVICE_IDS[] = {DEVICE_1_ID, DEVICE_2_ID, DEVICE_3_ID};
 const int NUM_DEVICES = sizeof(KNOWN_DEVICE_IDS) / sizeof(KNOWN_DEVICE_IDS[0]);
 DeviceState deviceStates[NUM_DEVICES];
 
+// Intercept window timer (starts at 48 hours in seconds)
+int interceptWindowSeconds = 48 * 60 * 60;  // 48 hours = 172800 seconds
+unsigned long lastInterceptUpdate = 0;
+
 // Helper to get device index from ID
 int getDeviceIndex(uint8_t deviceId) {
   for (int i = 0; i < NUM_DEVICES; i++) {
@@ -234,6 +238,22 @@ void loop() {
   ledHelper.animate();
 
   unsigned long currentMillis = millis();
+
+  // Update intercept window countdown every second
+  if (currentMillis - lastInterceptUpdate >= 1000) {
+    lastInterceptUpdate = currentMillis;
+
+    if (interceptWindowSeconds > 0) {
+      interceptWindowSeconds--;
+
+      // Convert seconds to hours, minutes, seconds
+      int hours = interceptWindowSeconds / 3600;
+      int minutes = (interceptWindowSeconds % 3600) / 60;
+      int seconds = interceptWindowSeconds % 60;
+
+      displayController.updateInterceptWindow(hours, minutes, seconds);
+    }
+  }
 }
 
 void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {

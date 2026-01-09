@@ -39,7 +39,7 @@ void DisplayController::begin(int deviceCount) {
   // Intercept Time
   tft.setTextColor(0xFD80);
   tft.setFreeFont(&FreeMonoBold24pt7b);
-  tft.drawString("48:53:33", 48, 356);
+  tft.drawString("48:00:00", 48, 356);
   // Destination Label
   tft.setTextColor(0x3FE2);
   tft.setFreeFont(&FreeMonoBold9pt7b);
@@ -226,7 +226,17 @@ void DisplayController::updateDetectionRisk(float percentage) {
 }
 
 void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds) {
-  // Stub - implementation removed
+  // Format the time string (HH:MM:SS)
+  char buf[16];
+  sprintf(buf, "%02d:%02d:%02d", hours, minutes, seconds);
+
+  // Clear the area where the intercept window will be drawn
+  tft.fillRect(48, 356, 224, 40, TFT_BLACK);
+
+  // Draw the new intercept window time
+  tft.setTextColor(0xFD80);
+  tft.setFreeFont(&FreeMonoBold24pt7b);
+  tft.drawString(buf, 48, 356);
 }
 
 void DisplayController::updateServiceLink(bool connected) {

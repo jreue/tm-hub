@@ -2,9 +2,9 @@
 #include <WiFi.h>
 #include <esp_now.h>
 
+#include "DisplayController.h"
 #include "GameEngine.h"
 #include "LEDStatusHelper.h"
-#include "DisplayController.h"
 #include "hardware_config.h"
 
 LEDStatusHelper ledHelper;
@@ -83,8 +83,6 @@ void handleScannerMessage(ScannerMessage msg);
 void handleScannerConnected();
 
 void updateDeviceStatusDisplay();
-void updateDeviceConnection(int count);
-void updateDeviceCalibration(int count);
 
 void setup() {
   Serial.begin(115200);
@@ -186,7 +184,7 @@ void handleScannerMessage(ScannerMessage msg) {
 
 void handleScannerConnected() {
   Serial.println("Scanner has connected!");
-  displayController.updateScannerStatus(true);
+  displayController.updateServiceLink(true);
 }
 
 void handleDeviceMessage(DeviceMessage msg) {
@@ -243,7 +241,7 @@ void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
   Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
 
   // Update display
-  displayController.updateDate(month, day, year);
+  displayController.updateDestinationDate(month, day, year);
 }
 
 void updateDeviceStatusDisplay() {
@@ -260,17 +258,8 @@ void updateDeviceStatusDisplay() {
     }
   }
 
-  // Update TFT displays
-  updateDeviceConnection(onlineCount);
-  updateDeviceCalibration(calibratedCount);
-}
-
-void updateDeviceConnection(int count) {
-  displayController.updateDeviceConnection(count);
-}
-
-void updateDeviceCalibration(int count) {
-  displayController.updateDeviceCalibration(count);
+  // Update display with both counts
+  displayController.updateShieldModules(onlineCount, calibratedCount);
 }
 
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {

@@ -3,17 +3,26 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 
+#include "SystemResults.h"
+
 class DisplayController {
   public:
     DisplayController();
     void begin(int deviceCount);
-    void updateDeviceConnection(int count);
-    void updateDeviceCalibration(int count);
-    void updateScannerStatus(bool connected);
-    void updateDate(uint8_t month, uint8_t day, uint16_t year);
+    void updateDestinationDate(uint8_t month, uint8_t day, uint16_t year);
+    void updateCurrentDate(uint8_t month, uint8_t day, uint16_t year);
+    void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);
+    void updateCorePower(const String& status);
+    void updateShieldModules(int online, int calibrated);
+    void updateShieldStatus(const String& status);
+    void updateDetectionRisk(const String& level);
+    void updateInterceptWindow(int hours, int minutes, int seconds);
+    void updateServiceLink(bool connected);
 
   private:
     TFT_eSPI tft;
     int totalDevices;
     void enableBacklight();
+    void renderSystemResults();
+    void renderSystemResultItem(const char* label, const char* value, int32_t y);
 };

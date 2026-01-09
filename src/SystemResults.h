@@ -10,21 +10,29 @@ struct SystemStatus {
 
 class SystemResults {
   public:
-    static SystemStatus results[];
-    static const size_t resultCount;
+    // Date-related results
+    static SystemStatus dateResults[];
+    static const size_t dateResultCount;
+    static const int IDX_DATE_DESTINATION = 0;
+    static const int IDX_DATE_CURRENT = 1;
+    static const int IDX_DATE_LAST_DEPARTURE = 2;
 
-    static SystemStatus* getResults();
-    static size_t getResultCount();
+    // Module-related results
+    static SystemStatus moduleResults[];
+    static const size_t moduleResultCount;
+    static const int IDX_MODULE_SHIELD_MODULES = 0;
+    static const int IDX_MODULE_SHIELD_CALIBRATED = 1;
+    static const int IDX_MODULE_SHIELD_STATUS = 2;
 
-    // Indices for easy access to specific results
-    static const int IDX_DESTINATION_DATE = 0;
-    static const int IDX_CURRENT_DATE = 1;
-    static const int IDX_LAST_DEPARTURE = 2;
-    static const int IDX_CORE_POWER = 3;
-    static const int IDX_SHIELD_MODULES = 4;
-    static const int IDX_SHIELD_MODULES_CALIBRATED = 5;
-    static const int IDX_SHIELD_STATUS = 6;
-    static const int IDX_DETECTION_RISK = 7;
-    static const int IDX_INTERCEPT_WINDOW = 8;
-    static const int IDX_SERVICE_LINK = 9;
+    // Risk/Intercept results
+    static SystemStatus riskResults[];
+    static const size_t riskResultCount;
+    static const int IDX_RISK_DETECTION_RISK = 0;
+    static const int IDX_RISK_INTERCEPT_WINDOW = 1;
+
+    // General system results
+    static SystemStatus systemResults[];
+    static const size_t systemResultCount;
+    static const int IDX_SYSTEM_CORE_POWER = 0;
+    static const int IDX_SYSTEM_SERVICE_LINK = 1;
 };

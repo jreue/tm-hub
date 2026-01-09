@@ -28,6 +28,12 @@ class DisplayController {
     TFT_eSPI tft;
     int totalDevices;
     void enableBacklight();
+    void renderChrome();
+    void renderDateLabels();
+    void renderInterceptLabels();
+    void renderSystemLabels();
+    void renderShieldChrome();
+    void renderShieldLabels();
     void renderModuleConnectionProgress(int count);
     void renderModuleCalibrationProgress(int count);
     void updateShieldPower(int calibrated, int total);

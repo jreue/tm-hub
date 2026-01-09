@@ -5,20 +5,16 @@ DisplayController::DisplayController() {
 
 void DisplayController::begin(int deviceCount) {
   totalDevices = deviceCount;
-  // TFT Initialization
+
   tft.init();
   tft.setRotation(0);  // 1 = landscape, 0 = portrait
   enableBacklight();
   tft.fillScreen(TFT_BLACK);
 
-  ///////////
-
-  const char* CorePowerValue_text = "ONLINE";
-  const char* CurrentDateValue_text = "06/04/2056";
   const char* DestinationValue_text = "--/--/--";
-  const char* LastDepartureValue_text = "06/04/2026";
-  const char* PowerValue_text = "33%";
-  const char* RiskValue_text = "HIGH";
+  const char* CurrentDateValue_text = "06/04/2056";
+  const char* LastDepartureValue_text = "12/25/2025";
+  const char* CorePowerValue_text = "ONLINE";
   const char* ServiceLinkValue_text = "DISCONNECTED";
 
   // Header Text
@@ -39,7 +35,7 @@ void DisplayController::begin(int deviceCount) {
   // Intercept Time
   tft.setTextColor(0xFD80);
   tft.setFreeFont(&FreeMonoBold24pt7b);
-  tft.drawString("48:00:00", 48, 356);
+  tft.drawString("--:--:--", 48, 356);
   // Destination Label
   tft.setTextColor(0x3FE2);
   tft.setFreeFont(&FreeMonoBold9pt7b);
@@ -64,22 +60,24 @@ void DisplayController::begin(int deviceCount) {
   tft.drawString("Power", 25, 252);
   // Risk Label
   tft.drawString("Detection Risk", 25, 285);
+
   // DestinationValue
+  tft.setTextColor(TFT_YELLOW);
   tft.drawString(DestinationValue_text, 219, 44);
   // CurrentDateValue
+  tft.setTextColor(TFT_WHITE);
   tft.drawString(CurrentDateValue_text, 197, 72);
   // LastDepartureValue
+  tft.setTextColor(TFT_BLUE);
   tft.drawString(LastDepartureValue_text, 196, 100);
-  // PowerValue
-  tft.drawString(PowerValue_text, 253, 252);
-  // RiskValue
-  tft.setTextColor(0xF9C6);
-  tft.drawString(RiskValue_text, 245, 285);
-  // ServiceLinkValue
-  tft.drawString(ServiceLinkValue_text, 174, 449);
+
   // CorePowerValue
-  tft.setTextColor(0xFFFF);
+  tft.setTextColor(TFT_WHITE);
   tft.drawString(CorePowerValue_text, 240, 421);
+
+  // ServiceLinkValue
+  tft.setTextColor(0xF9C6);
+  tft.drawString(ServiceLinkValue_text, 174, 449);
 
   // Initialize progress indicators with default state (0)
   renderModuleConnectionProgress(0);
@@ -124,7 +122,7 @@ void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16
   tft.fillRect(197, 44, 110, 15, TFT_BLACK);
 
   // Draw the new date value
-  tft.setTextColor(0x3FE2);
+  tft.setTextColor(TFT_YELLOW);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 44);
 }
@@ -139,7 +137,7 @@ void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t y
   tft.fillRect(197, 72, 110, 15, TFT_BLACK);
 
   // Draw the new date value
-  tft.setTextColor(0x3FE2);
+  tft.setTextColor(TFT_WHITE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 72);
 }
@@ -154,7 +152,7 @@ void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t
   tft.fillRect(197, 100, 110, 15, TFT_BLACK);
 
   // Draw the new date value
-  tft.setTextColor(0x3FE2);
+  tft.setTextColor(TFT_BLUE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 100);
 }

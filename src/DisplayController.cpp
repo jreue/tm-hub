@@ -178,7 +178,7 @@ void DisplayController::updateShieldPower(int calibrated, int total) {
   sprintf(buf, "%.1f%%", percentage);
 
   // Clear the area where the power percentage will be drawn
-  tft.fillRect(240, 252, 60, 15, TFT_BLACK);
+  tft.fillRect(200, 252, 100, 15, TFT_BLACK);
 
   // Draw the new power percentage
   tft.setTextColor(TFT_WHITE);

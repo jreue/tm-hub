@@ -184,5 +184,15 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
 }
 
 void DisplayController::updateServiceLink(bool connected) {
-  // Stub - implementation removed
+  const char* status = connected ? "ESTABLISHED" : "DISCONNECTED";
+  const uint16_t color = connected ? TFT_WHITE : 0xF9C6;
+  // Clear the area where the service link text will be drawn
+  tft.fillRect(174, 451, 140, 15, TFT_BLACK);
+
+  // Draw the new service link status
+  tft.setTextColor(color);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString(status, 306, 449);
+  tft.setTextDatum(TL_DATUM);
 }

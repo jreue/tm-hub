@@ -23,10 +23,4 @@ class DisplayController {
     TFT_eSPI tft;
     int totalDevices;
     void enableBacklight();
-    void renderDateResults(int32_t startY, int32_t lineHeight);
-    void renderModuleResults(int32_t startY, int32_t lineHeight);
-    void renderRiskResults(int32_t startY, int32_t lineHeight);
-    void renderSystemResults(int32_t startY, int32_t lineHeight);
-    void renderSystemResultItem(const char* label, const char* value, uint16_t valueColor,
-                                int32_t y);
 };

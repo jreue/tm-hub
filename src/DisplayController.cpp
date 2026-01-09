@@ -119,7 +119,18 @@ void DisplayController::enableBacklight() {
 }
 
 void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16_t year) {
-  // Stub - implementation removed
+  // Format the date string (MM/DD/YYYY)
+  char buf[16];
+  sprintf(buf, "%02d/%02d/%04d", month, day, year);
+
+  // Clear the area where the date will be drawn
+  // Using approximate width based on FreeMonoBold9pt7b font (~90 pixels for date string)
+  tft.fillRect(197, 44, 110, 15, TFT_BLACK);
+
+  // Draw the new date value
+  tft.setTextColor(0x3FE2);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.drawString(buf, 197, 44);
 }
 
 void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t year) {

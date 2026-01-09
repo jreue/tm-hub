@@ -81,37 +81,37 @@ void DisplayController::begin(int deviceCount) {
   tft.setTextColor(0xFFFF);
   tft.drawString(CorePowerValue_text, 240, 421);
   // ModuleValue1
-  tft.fillRect(180, 181, 10, 20, 0x3FEC);
+  tft.fillRect(180, 181, 10, 20, COLOR_PROGRESS_FILLED);
   // ModuleValue2
-  tft.fillRect(194, 181, 10, 20, 0x19E3);
+  tft.fillRect(194, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // ModuleValue3
-  tft.fillRect(208, 181, 10, 20, 0x19E3);
+  tft.fillRect(208, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // ModuleValue4
-  tft.fillRect(222, 181, 10, 20, 0x19E3);
+  tft.fillRect(222, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // ModuleValue5
-  tft.fillRect(236, 181, 10, 20, 0x19E3);
+  tft.fillRect(236, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // ModuleValue6
-  tft.fillRect(250, 181, 10, 20, 0x19E3);
+  tft.fillRect(250, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // ModuleValue7
-  tft.fillRect(264, 181, 10, 20, 0x19E3);
+  tft.fillRect(264, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // ModuleValue8
-  tft.fillRect(278, 181, 10, 20, 0x19E3);
+  tft.fillRect(278, 181, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated1Value
-  tft.fillRect(180, 214, 10, 20, 0x3FEC);
+  tft.fillRect(180, 214, 10, 20, COLOR_PROGRESS_FILLED);
   // Calibrated2Value
-  tft.fillRect(194, 214, 10, 20, 0x19E3);
+  tft.fillRect(194, 214, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated3Value
-  tft.fillRect(208, 214, 10, 20, 0x19E3);
+  tft.fillRect(208, 214, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated4Value
-  tft.fillRect(222, 214, 10, 20, 0x19E3);
+  tft.fillRect(222, 214, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated5Value
-  tft.fillRect(236, 214, 10, 20, 0x19E3);
+  tft.fillRect(236, 214, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated6Value
-  tft.fillRect(250, 214, 10, 20, 0x19E3);
+  tft.fillRect(250, 214, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated7Value
-  tft.fillRect(264, 214, 10, 20, 0x19E3);
+  tft.fillRect(264, 214, 10, 20, COLOR_PROGRESS_EMPTY);
   // Calibrated8Value
-  tft.fillRect(278, 214, 10, 20, 0x19E3);
+  tft.fillRect(278, 214, 10, 20, COLOR_PROGRESS_EMPTY);
 }
 
 void DisplayController::enableBacklight() {

@@ -5,6 +5,10 @@
 
 #include "SystemResults.h"
 
+// Color constants for progress indicators
+#define COLOR_PROGRESS_FILLED 0x3FEC
+#define COLOR_PROGRESS_EMPTY 0x19E3
+
 class DisplayController {
   public:
     DisplayController();

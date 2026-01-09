@@ -22,20 +22,11 @@ void DisplayController::begin(int deviceCount) {
   tft.setTextSize(1);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("TIME DISPLACEMENT CONSOLE", 23, 7);
-  // Header Underline
+  // Header Line
   tft.drawLine(10, 30, 310, 30, COLOR_NEON_GREEN);
-  // Core Power Label
-  tft.drawString("Core Power", 15, 421);
-  // Service Link Label
-  tft.drawString("Service Link", 15, 449);
   // Bottom Line
   tft.drawLine(10, 410, 310, 410, COLOR_NEON_GREEN);
-  // Intercept Window Label
-  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
-  tft.drawString("INTERCEPT WINDOW", 72, 336);
-  // Intercept Time
-  tft.setFreeFont(&FreeMonoBold24pt7b);
-  tft.drawString("--:--:--", 48, 356);
+
   // Destination Label
   tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
@@ -44,15 +35,33 @@ void DisplayController::begin(int deviceCount) {
   tft.drawString("Current Date", 15, 72);
   // Last Departure Label
   tft.drawString("Last Departure", 15, 100);
+
+  // Intercept Window Label
+  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.drawString("INTERCEPT WINDOW", 72, 336);
+  // Intercept Time
+  tft.setFreeFont(&FreeMonoBold24pt7b);
+  tft.drawString("--:--:--", 48, 356);
+
+  // Core Power Label
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.drawString("Core Power", 15, 421);
+  // Service Link Label
+  tft.drawString("Service Link", 15, 449);
+
   // Shield Border
   tft.drawRoundRect(10, 149, 300, 174, 5, COLOR_NEON_GREEN);
   // Shield Container
   tft.fillRoundRect(86, 140, 149, 18, 6, COLOR_NEON_GREEN);
   // Shielding Header
   tft.setTextColor(TFT_BLACK);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("SHIELDING", 111, 141);
+
   // Modules Label
   tft.setTextColor(COLOR_NEON_GREEN);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("Modules", 25, 184);
   // Calibrated Label
   tft.drawString("Calibrated", 25, 218);

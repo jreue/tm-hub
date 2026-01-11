@@ -74,33 +74,36 @@ int getDeviceIndex(uint8_t deviceId) {
 
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
 
-// Forward declarations
+// Generic Message Handler
 void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
 
+// Date Message Handlers
+void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
+
+// Scanner Message Handlers
+void handleScannerMessage(ScannerMessage msg);
+void handleScannerConnected();
+
+// Device Message Handlers
 void handleDeviceMessage(DeviceMessage msg);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDeviceOffline(int deviceIndex, uint8_t deviceId);
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
-void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
 
-void handleScannerMessage(ScannerMessage msg);
-void handleScannerConnected();
-
+void initDevices();
 void updateDeviceStatusDisplay();
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("HUB Starting...");
 
-  // LED Initialization
   ledHelper.begin();
-
-  // Display Initialization
   displayController.begin(NUM_DEVICES);
 
   WiFi.mode(WIFI_STA);
-  Serial.println(WiFi.macAddress());
+  Serial.printf("HUB MAC Address: %s\n", WiFi.macAddress().c_str());
 
-  // Init ESP-NOW
+  Serial.println("Initializing ESP-NOW...");
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
@@ -108,12 +111,7 @@ void setup() {
 
   esp_now_register_recv_cb(handleDataReceived);
 
-  Serial.println("Waiting for incoming messages...");
-  Serial.println("================================\n");
-
-  // Initialize device display
-  Serial.println("tm-hub started");
-  Serial.printf("Monitoring %d known device(s): ", NUM_DEVICES);
+  Serial.print("Known Device IDs: ");
   for (int i = 0; i < NUM_DEVICES; i++) {
     Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
     if (i < NUM_DEVICES - 1)
@@ -121,25 +119,41 @@ void setup() {
   }
   Serial.println();
 
-  // Initialize all devices as not available
-  for (int i = 0; i < NUM_DEVICES; i++) {
-    deviceStates[i].available = false;  // Start as disconnected
-    deviceStates[i].calibrated = false;
-    ledHelper.updateStatusLEDs(i, false, false);
+  initDevices();
+}
+
+void loop() {
+  // gameEngine.loop();
+
+  // Animate calibrated devices
+  ledHelper.animate();
+
+  unsigned long currentMillis = millis();
+
+  // Update intercept window countdown every second
+  if (currentMillis - lastInterceptUpdate >= 1000) {
+    lastInterceptUpdate = currentMillis;
+
+    if (interceptWindowSeconds > 0) {
+      interceptWindowSeconds--;
+
+      // Convert seconds to hours, minutes, seconds
+      int hours = interceptWindowSeconds / 3600;
+      int minutes = (interceptWindowSeconds % 3600) / 60;
+      int seconds = interceptWindowSeconds % 60;
+
+      displayController.updateInterceptWindow(hours, minutes, seconds);
+    }
   }
-
-  // Display initial device status summary
-  updateDeviceStatusDisplay();
-
-  Serial.println("Waiting for devices to connect...");
 }
 
 void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
-  // Step 1: Read just the header to determine message type
+  // Read message header to determine type
   EspNowHeader header;
   memcpy(&header, incomingDataRaw, sizeof(EspNowHeader));
 
-  Serial.print("Data received from MAC: ");
+  Serial.println("--- ESP-NOW Data Received ---");
+  Serial.print("MAC Address: ");
   for (int i = 0; i < 6; i++) {
     Serial.printf("%02X", mac[i]);
     if (i < 5)
@@ -147,35 +161,40 @@ void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int 
   }
   Serial.println();
 
-  Serial.print("ESP ID: ");
-  Serial.println(header.id);
-  Serial.print("Message Type: ");
-  Serial.println(header.messageType);
-  Serial.println("---");
+  Serial.printf("ESP ID: %d\n", header.id);
+  Serial.printf("Message Type: %d\n", header.messageType);
 
   if (header.messageType == MSG_TYPE_CONNECT || header.messageType == MSG_TYPE_STATUS ||
       header.messageType == MSG_TYPE_DISCONNECT) {
-    // Step 2: Deserialize device message
+    // Device Messages
     DeviceMessage deviceMsg;
     memcpy(&deviceMsg, incomingDataRaw, sizeof(DeviceMessage));
     handleDeviceMessage(deviceMsg);
   } else if (header.messageType == MSG_TYPE_DATE_UPDATE) {
-    // Step 2: Deserialize date message
+    // Date Messages
     DateMessage dateMsg;
     memcpy(&dateMsg, incomingDataRaw, sizeof(DateMessage));
     handleDateChanged(dateMsg.month, dateMsg.day, dateMsg.year);
   } else if (header.messageType == MSG_TYPE_SCANNER_CONNECTED) {
-    // Step 2: Deserialize scanner message
+    // Scanner Messages
     ScannerMessage scannerMsg;
     memcpy(&scannerMsg, incomingDataRaw, sizeof(ScannerMessage));
     handleScannerMessage(scannerMsg);
   } else {
     Serial.println("Unknown message type received.");
   }
+
+  Serial.println("-----------------------------");
+}
+
+void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
+  Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
+  displayController.updateTargetDate(month, day, year);
 }
 
 void handleScannerMessage(ScannerMessage msg) {
-  Serial.println("Scanner connected message received.");
+  Serial.printf("Handling scanner message type: %d\n", msg.messageType);
+
   switch (msg.messageType) {
     case MSG_TYPE_SCANNER_CONNECTED:
       handleScannerConnected();
@@ -192,10 +211,12 @@ void handleScannerConnected() {
 }
 
 void handleDeviceMessage(DeviceMessage msg) {
-  // Update device state
+  Serial.printf("Handling device message from ID: %d\n", msg.id);
+
   int deviceIndex = getDeviceIndex(msg.id);
   if (deviceIndex < 0) {
-    return;  // Unknown device
+    Serial.printf("Unknown device ID: %d\n", msg.id);
+    return;
   }
 
   bool wasAvailable = deviceStates[deviceIndex].available;
@@ -231,41 +252,37 @@ void handleDeviceMessage(DeviceMessage msg) {
   }
 }
 
-void loop() {
-  // gameEngine.loop();
+void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
+  Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
 
-  // Animate calibrated devices
-  ledHelper.animate();
-
-  unsigned long currentMillis = millis();
-
-  // Update intercept window countdown every second
-  if (currentMillis - lastInterceptUpdate >= 1000) {
-    lastInterceptUpdate = currentMillis;
-
-    if (interceptWindowSeconds > 0) {
-      interceptWindowSeconds--;
-
-      // Convert seconds to hours, minutes, seconds
-      int hours = interceptWindowSeconds / 3600;
-      int minutes = (interceptWindowSeconds % 3600) / 60;
-      int seconds = interceptWindowSeconds % 60;
-
-      displayController.updateInterceptWindow(hours, minutes, seconds);
-    }
-  }
+  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
+  updateDeviceStatusDisplay();
 }
 
-void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
-  // Print to terminal
-  Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
+void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
+  Serial.printf("Device (%d): OFFLINE\n", deviceId);
 
-  // Update display
-  displayController.updateTargetDate(month, day, year);
+  ledHelper.updateStatusLEDs(deviceIndex, false, false);
+  updateDeviceStatusDisplay();
+}
+
+void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
+  Serial.printf("Device (%d): Changed to %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
+
+  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
+  updateDeviceStatusDisplay();
+}
+
+void initDevices() {
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    deviceStates[i].available = false;
+    deviceStates[i].calibrated = false;
+    ledHelper.updateStatusLEDs(i, false, false);
+  }
+  updateDeviceStatusDisplay();
 }
 
 void updateDeviceStatusDisplay() {
-  // Count online and calibrated devices
   int onlineCount = 0;
   int calibratedCount = 0;
 
@@ -278,40 +295,5 @@ void updateDeviceStatusDisplay() {
     }
   }
 
-  // Update display with both counts
   displayController.updateShieldModules(onlineCount, calibratedCount);
-}
-
-void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
-  // Update LEDs
-  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-
-  // Print to terminal
-  Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
-
-  // Update TFT summary
-  updateDeviceStatusDisplay();
-}
-
-void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
-  // Update LEDs
-  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-
-  // Print to terminal
-  Serial.printf("Device (%d): Calibration changed to %s\n", deviceId,
-                calibrated ? "TRUE" : "FALSE");
-
-  // Update TFT summary
-  updateDeviceStatusDisplay();
-}
-
-void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
-  // Update LEDs
-  ledHelper.updateStatusLEDs(deviceIndex, false, false);
-
-  // Print to terminal
-  Serial.printf("Device (%d): OFFLINE\n", deviceId);
-
-  // Update TFT summary
-  updateDeviceStatusDisplay();
 }

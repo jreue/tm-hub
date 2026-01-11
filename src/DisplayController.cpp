@@ -19,7 +19,7 @@ void DisplayController::begin(int deviceCount) {
   renderShieldChrome();
   renderShieldLabels();
 
-  updateDestinationDate();
+  updateTargetDate();
   updateCurrentDate(1, 1, 2056);
   updateLastDeparture(12, 25, 2025);
 
@@ -76,7 +76,7 @@ void DisplayController::renderChrome() {
 }
 
 void DisplayController::renderDateLabels() {
-  renderLabel("Destination Date", DESTINATION_DATE_Y);
+  renderLabel("Target Date", TARGET_DATE_Y);
   renderLabel("Current Date", CURRENT_DATE_Y);
   renderLabel("Last Departure", LAST_DEPARTURE_Y);
 }
@@ -111,7 +111,7 @@ void DisplayController::renderShieldLabels() {
   renderShieldLabel("Detection Risk", SHIELDING_DETECTION_RISK_Y);
 }
 
-void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16_t year) {
+void DisplayController::updateTargetDate(uint8_t month, uint8_t day, uint16_t year) {
   // Format the date string (MM/DD/YYYY or --/--/---- if no values provided)
   char buf[16];
   if (month == 0 && day == 0 && year == 0) {
@@ -121,9 +121,9 @@ void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16
   }
 
   // Clear old Value
-  tft.fillRect(197, DESTINATION_DATE_Y, 110, 15, TFT_BLACK);
+  tft.fillRect(197, TARGET_DATE_Y, 110, 15, TFT_BLACK);
   // Render new Value
-  renderValue(buf, DESTINATION_DATE_Y, TFT_YELLOW);
+  renderValue(buf, TARGET_DATE_Y, TFT_YELLOW);
 }
 
 void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t year) {
@@ -154,7 +154,7 @@ void DisplayController::updateShieldModules(int online, int calibrated) {
 
 void DisplayController::renderModuleConnectionProgress(int count) {
   const int xPositions[] = {187, 201, 215, 229, 243, 257, 271, 285};
-  const int y = 181;
+  const int y = 180;
   const int width = 10;
   const int height = 20;
 
@@ -166,7 +166,7 @@ void DisplayController::renderModuleConnectionProgress(int count) {
 
 void DisplayController::renderModuleCalibrationProgress(int count) {
   const int xPositions[] = {187, 201, 215, 229, 243, 257, 271, 285};
-  const int y = 214;
+  const int y = 215;
   const int width = 10;
   const int height = 20;
 

@@ -16,7 +16,7 @@
 #define SHIELDING_LEFT_X 25
 #define SHIELDING_RIGHT_X 295
 
-#define DESTINATION_DATE_Y 44
+#define TARGET_DATE_Y 44
 #define CURRENT_DATE_Y 72
 #define LAST_DEPARTURE_Y 100
 #define SHIELDING_MODULES_Y 184
@@ -30,7 +30,7 @@ class DisplayController {
   public:
     DisplayController();
     void begin(int deviceCount);
-    void updateDestinationDate(uint8_t month = 0, uint8_t day = 0, uint16_t year = 0);
+    void updateTargetDate(uint8_t month = 0, uint8_t day = 0, uint16_t year = 0);
     void updateCurrentDate(uint8_t month, uint8_t day, uint16_t year);
     void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);
     void updateShieldModules(int online, int calibrated);

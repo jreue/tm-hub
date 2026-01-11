@@ -261,7 +261,7 @@ void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
   Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
 
   // Update display
-  displayController.updateDestinationDate(month, day, year);
+  displayController.updateTargetDate(month, day, year);
 }
 
 void updateDeviceStatusDisplay() {

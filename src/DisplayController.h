@@ -16,6 +16,16 @@
 #define SHIELDING_LEFT_X 25
 #define SHIELDING_RIGHT_X 295
 
+#define DESTINATION_DATE_Y 44
+#define CURRENT_DATE_Y 72
+#define LAST_DEPARTURE_Y 100
+#define SHIELDING_MODULES_Y 184
+#define SHIELDING_CALIBRATION_Y 218
+#define SHIELDING_POWER_Y 252
+#define SHIELDING_DETECTION_RISK_Y 285
+#define CORE_POWER_Y 421
+#define SERVICE_LINK_Y 449
+
 class DisplayController {
   public:
     DisplayController();

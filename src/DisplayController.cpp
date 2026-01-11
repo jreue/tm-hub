@@ -76,9 +76,9 @@ void DisplayController::renderChrome() {
 }
 
 void DisplayController::renderDateLabels() {
-  renderLabel("Destination Date", 44);
-  renderLabel("Current Date", 72);
-  renderLabel("Last Departure", 100);
+  renderLabel("Destination Date", DESTINATION_DATE_Y);
+  renderLabel("Current Date", CURRENT_DATE_Y);
+  renderLabel("Last Departure", LAST_DEPARTURE_Y);
 }
 
 void DisplayController::renderInterceptLabels() {
@@ -90,8 +90,8 @@ void DisplayController::renderInterceptLabels() {
 }
 
 void DisplayController::renderSystemLabels() {
-  renderLabel("Core Power", 421);
-  renderLabel("Service Link", 449);
+  renderLabel("Core Power", CORE_POWER_Y);
+  renderLabel("Service Link", SERVICE_LINK_Y);
 }
 
 void DisplayController::renderShieldChrome() {
@@ -105,10 +105,10 @@ void DisplayController::renderShieldChrome() {
 }
 
 void DisplayController::renderShieldLabels() {
-  renderShieldLabel("Modules", 184);
-  renderShieldLabel("Calibrated", 218);
-  renderShieldLabel("Power", 252);
-  renderShieldLabel("Detection Risk", 285);
+  renderShieldLabel("Modules", SHIELDING_MODULES_Y);
+  renderShieldLabel("Calibrated", SHIELDING_CALIBRATION_Y);
+  renderShieldLabel("Power", SHIELDING_POWER_Y);
+  renderShieldLabel("Detection Risk", SHIELDING_DETECTION_RISK_Y);
 }
 
 void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16_t year) {
@@ -121,9 +121,9 @@ void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16
   }
 
   // Clear old Value
-  tft.fillRect(197, 44, 110, 15, TFT_BLACK);
+  tft.fillRect(197, DESTINATION_DATE_Y, 110, 15, TFT_BLACK);
   // Render new Value
-  renderValue(buf, 44, TFT_YELLOW);
+  renderValue(buf, DESTINATION_DATE_Y, TFT_YELLOW);
 }
 
 void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t year) {
@@ -131,9 +131,9 @@ void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t y
   sprintf(buf, "%02d/%02d/%04d", month, day, year);
 
   // Clear old Value
-  tft.fillRect(197, 72, 110, 15, TFT_BLACK);
+  tft.fillRect(197, CURRENT_DATE_Y, 110, 15, TFT_BLACK);
   // Render new Value
-  renderValue(buf, 72, TFT_WHITE);
+  renderValue(buf, CURRENT_DATE_Y, TFT_WHITE);
 }
 
 void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t year) {
@@ -141,9 +141,9 @@ void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t
   sprintf(buf, "%02d/%02d/%04d", month, day, year);
 
   // Clear old Value
-  tft.fillRect(197, 100, 110, 15, TFT_BLACK);
+  tft.fillRect(197, LAST_DEPARTURE_Y, 110, 15, TFT_BLACK);
   // Render new Value
-  renderValue(buf, 100, TFT_LIGHTGREY);
+  renderValue(buf, LAST_DEPARTURE_Y, TFT_LIGHTGREY);
 }
 
 void DisplayController::updateShieldModules(int online, int calibrated) {
@@ -185,9 +185,9 @@ void DisplayController::updateShieldPower(int calibrated, int total) {
   sprintf(buf, "%.1f%%", percentage);
 
   // Clear old Value
-  tft.fillRect(200, 252, 100, 15, TFT_BLACK);
+  tft.fillRect(200, SHIELDING_POWER_Y, 100, 15, TFT_BLACK);
   // Render new Value
-  renderShieldValue(buf, 252, TFT_WHITE);
+  renderShieldValue(buf, SHIELDING_POWER_Y, TFT_WHITE);
 
   // Update detection risk based on shield power
   updateDetectionRisk(percentage);
@@ -217,9 +217,9 @@ void DisplayController::updateDetectionRisk(float percentage) {
   }
 
   // Clear old Value
-  tft.fillRect(200, 285, 100, 15, TFT_BLACK);
+  tft.fillRect(200, SHIELDING_DETECTION_RISK_Y, 100, 15, TFT_BLACK);
   // Render new Value
-  renderShieldValue(riskLevel, 285, COLOR_WARNING_ORANGE);
+  renderShieldValue(riskLevel, SHIELDING_DETECTION_RISK_Y, COLOR_WARNING_ORANGE);
 }
 
 void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds) {
@@ -237,7 +237,7 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
 }
 
 void DisplayController::updateCorePower(const String& status) {
-  renderValue(status, 421, TFT_WHITE);
+  renderValue(status, CORE_POWER_Y, TFT_WHITE);
 }
 
 void DisplayController::updateServiceLink(bool connected) {
@@ -245,7 +245,7 @@ void DisplayController::updateServiceLink(bool connected) {
   const uint16_t color = connected ? TFT_WHITE : COLOR_WARNING_ORANGE;
 
   // Clear old Value
-  tft.fillRect(174, 449, 140, 15, TFT_BLACK);
+  tft.fillRect(174, SERVICE_LINK_Y, 140, 15, TFT_BLACK);
   // Render new Value
-  renderValue(status, 449, color);
+  renderValue(status, SERVICE_LINK_Y, color);
 }

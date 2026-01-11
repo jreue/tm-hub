@@ -5,12 +5,16 @@
 
 #include "SystemResults.h"
 
-// Color constants for progress indicators
 #define COLOR_NEON_GREEN 0x3FE3
 #define COLOR_PROGRESS_FILLED 0x3FEC
 #define COLOR_PROGRESS_EMPTY 0x19E3
 #define COLOR_WARNING_ORANGE 0xF9C6
 #define COLOR_INTERCEPT_ORANGE 0xFD80
+
+#define LABEL_LEFT_X 15
+#define VALUE_RIGHT_X 306
+#define SHIELDING_LEFT_X 25
+#define SHIELDING_RIGHT_X 295
 
 class DisplayController {
   public:

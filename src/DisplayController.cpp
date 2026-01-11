@@ -51,53 +51,40 @@ void DisplayController::renderChrome() {
 }
 
 void DisplayController::renderDateLabels() {
-  // Destination Label
   tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("Destination Date", 15, 44);
-  // Current Label
   tft.drawString("Current Date", 15, 72);
-  // Last Departure Label
   tft.drawString("Last Departure", 15, 100);
 }
 
 void DisplayController::renderInterceptLabels() {
-  // Intercept Window Label
   tft.setTextColor(COLOR_INTERCEPT_ORANGE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("INTERCEPT WINDOW", 72, 336);
 }
 
 void DisplayController::renderSystemLabels() {
-  // Core Power Label
   tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("Core Power", 15, 421);
-  // Service Link Label
   tft.drawString("Service Link", 15, 449);
 }
 
 void DisplayController::renderShieldChrome() {
-  // Shield Border
   tft.drawRoundRect(10, 149, 300, 174, 5, COLOR_NEON_GREEN);
-  // Shield Container
   tft.fillRoundRect(86, 140, 149, 18, 6, COLOR_NEON_GREEN);
-  // Shielding Header
   tft.setTextColor(TFT_BLACK);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("SHIELDING", 111, 141);
 }
 
 void DisplayController::renderShieldLabels() {
-  // Modules Label
   tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString("Modules", 25, 184);
-  // Calibrated Label
   tft.drawString("Calibrated", 25, 218);
-  // Power Label
   tft.drawString("Power", 25, 252);
-  // Risk Label
   tft.drawString("Detection Risk", 25, 285);
 }
 
@@ -134,41 +121,36 @@ void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16
     sprintf(buf, "%02d/%02d/%04d", month, day, year);
   }
 
-  // Clear the area where the date will be drawn
-  // Using approximate width based on FreeMonoBold9pt7b font (~90 pixels for date string)
+  // Clear old Value
   tft.fillRect(197, 44, 110, 15, TFT_BLACK);
 
-  // Draw the new date value
+  // Render new Value
   tft.setTextColor(TFT_YELLOW);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 44);
 }
 
 void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t year) {
-  // Format the date string (MM/DD/YYYY)
   char buf[16];
   sprintf(buf, "%02d/%02d/%04d", month, day, year);
 
-  // Clear the area where the date will be drawn
-  // Using approximate width based on FreeMonoBold9pt7b font (~90 pixels for date string)
+  // Clear old Value
   tft.fillRect(197, 72, 110, 15, TFT_BLACK);
 
-  // Draw the new date value
+  // Render new Value
   tft.setTextColor(TFT_WHITE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 72);
 }
 
 void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t year) {
-  // Format the date string (MM/DD/YYYY)
   char buf[16];
   sprintf(buf, "%02d/%02d/%04d", month, day, year);
 
-  // Clear the area where the date will be drawn
-  // Using approximate width based on FreeMonoBold9pt7b font (~90 pixels for date string)
+  // Clear old Value
   tft.fillRect(197, 100, 110, 15, TFT_BLACK);
 
-  // Draw the new date value
+  // Render new Value
   tft.setTextColor(TFT_LIGHTGREY);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 100);
@@ -194,10 +176,10 @@ void DisplayController::updateShieldPower(int calibrated, int total) {
   char buf[10];
   sprintf(buf, "%.1f%%", percentage);
 
-  // Clear the area where the power percentage will be drawn
+  // Clear old Value
   tft.fillRect(200, 252, 100, 15, TFT_BLACK);
 
-  // Draw the new power percentage
+  // Render new Value
   tft.setTextColor(TFT_WHITE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.setTextDatum(TR_DATUM);
@@ -231,10 +213,10 @@ void DisplayController::updateDetectionRisk(float percentage) {
     riskLevel = "SECURE";
   }
 
-  // Clear the area where the risk level will be drawn
+  // Clear old Value
   tft.fillRect(200, 285, 100, 15, TFT_BLACK);
 
-  // Draw the new risk level
+  // Render new Value
   tft.setTextColor(COLOR_WARNING_ORANGE);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.setTextDatum(TR_DATUM);
@@ -247,10 +229,10 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
   char buf[16];
   sprintf(buf, "%02d:%02d:%02d", hours, minutes, seconds);
 
-  // Clear the area where the intercept window will be drawn
+  // Clear old Value
   tft.fillRect(48, 356, 224, 40, TFT_BLACK);
 
-  // Draw the new intercept window time
+  // Render new Value
   tft.setTextColor(COLOR_INTERCEPT_ORANGE);
   tft.setFreeFont(&FreeMonoBold24pt7b);
   tft.drawString(buf, 48, 356);
@@ -259,10 +241,11 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
 void DisplayController::updateServiceLink(bool connected) {
   const char* status = connected ? "ESTABLISHED" : "DISCONNECTED";
   const uint16_t color = connected ? TFT_WHITE : COLOR_WARNING_ORANGE;
-  // Clear the area where the service link text will be drawn
+
+  // Clear old Value
   tft.fillRect(174, 451, 140, 15, TFT_BLACK);
 
-  // Draw the new service link status
+  // Render new Value
   tft.setTextColor(color);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.setTextDatum(TR_DATUM);

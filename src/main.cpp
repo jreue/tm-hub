@@ -75,7 +75,8 @@ int getDeviceIndex(uint8_t deviceId) {
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
 
 // Generic Message Handler
-void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
+void handleESPNowDataSent(const uint8_t* mac_addr, esp_now_send_status_t status);
+void handleESPNowDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
 
 // Date Message Handlers
 void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
@@ -92,6 +93,7 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 
 void initDevices();
 void updateDeviceStatusDisplay();
+void updateDeviceStateOnScanner();
 
 void setup() {
   Serial.begin(115200);
@@ -99,6 +101,14 @@ void setup() {
 
   ledHelper.begin();
   displayController.begin(NUM_DEVICES);
+
+  Serial.print("Known Device IDs: [");
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
+    if (i < NUM_DEVICES - 1)
+      Serial.print(", ");
+  }
+  Serial.println("]");
 
   WiFi.mode(WIFI_STA);
   Serial.printf("HUB MAC Address: %s\n", WiFi.macAddress().c_str());
@@ -109,15 +119,21 @@ void setup() {
     return;
   }
 
-  esp_now_register_recv_cb(handleDataReceived);
+  esp_now_register_send_cb(handleESPNowDataSent);
+  esp_now_register_recv_cb(handleESPNowDataReceived);
 
-  Serial.print("Known Device IDs: ");
-  for (int i = 0; i < NUM_DEVICES; i++) {
-    Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
-    if (i < NUM_DEVICES - 1)
-      Serial.print(", ");
+  Serial.println("Adding ESP-NOW Peers...");
+  esp_now_peer_info_t peerInfo;
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, scannerMacAddress, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  // Add Scanner peer
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add scanner peer");
+    return;
   }
-  Serial.println();
 
   initDevices();
 }
@@ -147,7 +163,16 @@ void loop() {
   }
 }
 
-void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
+void handleESPNowDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
+  if (status == ESP_NOW_SEND_SUCCESS) {
+    Serial.println("  ✓ Delivery confirmed");
+  } else {
+    Serial.println("  ✗ Delivery failed");
+  }
+  Serial.println("------------------------");
+}
+
+void handleESPNowDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
   // Small delay to prevent serial corruption when called from WiFi task
   delayMicroseconds(100);
 
@@ -299,4 +324,11 @@ void updateDeviceStatusDisplay() {
   }
 
   displayController.updateShieldModules(onlineCount, calibratedCount);
+
+  updateDeviceStateOnScanner();
+}
+
+void updateDeviceStateOnScanner() {
+  Serial.println("Sending device state update to scanner...");
+  esp_now_send(scannerMacAddress, (uint8_t*)"PING", 4);
 }

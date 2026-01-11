@@ -19,9 +19,9 @@ class DisplayController {
     void updateDestinationDate(uint8_t month = 0, uint8_t day = 0, uint16_t year = 0);
     void updateCurrentDate(uint8_t month, uint8_t day, uint16_t year);
     void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);
-    void updateCorePower(const String& status);
     void updateShieldModules(int online, int calibrated);
     void updateInterceptWindow(int hours, int minutes, int seconds);
+    void updateCorePower(const String& status);
     void updateServiceLink(bool connected);
 
   private:

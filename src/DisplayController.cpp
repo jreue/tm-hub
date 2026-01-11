@@ -65,7 +65,7 @@ void DisplayController::renderChrome() {
   // Header Text
   tft.setTextColor(COLOR_NEON_GREEN);
   tft.setTextSize(1);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setFreeFont(&FreeSansBold9pt7b);
   tft.setTextDatum(TC_DATUM);
   tft.drawString("TIME DISPLACEMENT CONSOLE", 160, 7);
   tft.setTextDatum(TL_DATUM);
@@ -95,8 +95,13 @@ void DisplayController::renderSystemLabels() {
 }
 
 void DisplayController::renderShieldChrome() {
+  // Outer border
   tft.drawRoundRect(10, 150, 300, 175, 5, COLOR_NEON_GREEN);
+
+  // Title background
+  tft.fillRoundRect(83, 138, 154, 24, 7, COLOR_DARK_GREEN);
   tft.fillRoundRect(85, 140, 150, 20, 6, COLOR_NEON_GREEN);
+
   tft.setTextColor(TFT_BLACK);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.setTextDatum(TC_DATUM);

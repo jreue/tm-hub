@@ -148,6 +148,9 @@ void loop() {
 }
 
 void handleDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
+  // Small delay to prevent serial corruption when called from WiFi task
+  delayMicroseconds(100);
+
   // Read message header to determine type
   EspNowHeader header;
   memcpy(&header, incomingDataRaw, sizeof(EspNowHeader));

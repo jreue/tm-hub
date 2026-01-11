@@ -11,9 +11,6 @@ void DisplayController::begin(int deviceCount) {
   enableBacklight();
   tft.fillScreen(TFT_BLACK);
 
-  const char* DestinationValue_text = "--/--/--";
-  const char* CurrentDateValue_text = "06/04/2056";
-  const char* LastDepartureValue_text = "12/25/2025";
   const char* CorePowerValue_text = "ONLINE";
   const char* ServiceLinkValue_text = "DISCONNECTED";
 
@@ -22,11 +19,6 @@ void DisplayController::begin(int deviceCount) {
   renderInterceptLabels();
   renderSystemLabels();
 
-  // Intercept Time
-  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
-  tft.setFreeFont(&FreeMonoBold24pt7b);
-  tft.drawString("--:--:--", 48, 356);
-
   renderShieldChrome();
   renderShieldLabels();
 
@@ -34,9 +26,8 @@ void DisplayController::begin(int deviceCount) {
   updateCurrentDate(1, 1, 2056);
   updateLastDeparture(12, 25, 2025);
 
-  // ServiceLinkValue
-  tft.setTextColor(COLOR_WARNING_ORANGE);
-  tft.drawString(ServiceLinkValue_text, 174, 449);
+  updateCorePower(CorePowerValue_text);
+  updateServiceLink(false);
 
   // Initialize progress indicators with default state (0)
   renderModuleConnectionProgress(0);
@@ -178,13 +169,15 @@ void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t
   tft.fillRect(197, 100, 110, 15, TFT_BLACK);
 
   // Draw the new date value
-  tft.setTextColor(TFT_BLUE);
+  tft.setTextColor(TFT_LIGHTGREY);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(buf, 197, 100);
 }
 
 void DisplayController::updateCorePower(const String& status) {
-  // Stub - implementation removed
+  tft.setTextColor(TFT_WHITE);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.drawString(status, 240, 421);
 }
 
 void DisplayController::updateShieldModules(int online, int calibrated) {

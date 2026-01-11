@@ -33,6 +33,34 @@ void DisplayController::enableBacklight() {
   digitalWrite(TFT_BL, HIGH);
 }
 
+void DisplayController::renderLabel(const String& text, int y) {
+  tft.setTextColor(COLOR_NEON_GREEN);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.drawString(text, LABEL_LEFT_X, y);
+}
+
+void DisplayController::renderShieldLabel(const String& text, int y) {
+  tft.setTextColor(COLOR_NEON_GREEN);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.drawString(text, SHIELDING_LEFT_X, y);
+}
+
+void DisplayController::renderValue(const String& text, int y, uint16_t color) {
+  tft.setTextColor(color);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString(text, VALUE_RIGHT_X, y);
+  tft.setTextDatum(TL_DATUM);
+}
+
+void DisplayController::renderShieldValue(const String& text, int y, uint16_t color) {
+  tft.setTextColor(color);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setTextDatum(TR_DATUM);
+  tft.drawString(text, SHIELDING_RIGHT_X, y);
+  tft.setTextDatum(TL_DATUM);
+}
+
 void DisplayController::renderChrome() {
   // Header Text
   tft.setTextColor(COLOR_NEON_GREEN);
@@ -48,11 +76,9 @@ void DisplayController::renderChrome() {
 }
 
 void DisplayController::renderDateLabels() {
-  tft.setTextColor(COLOR_NEON_GREEN);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.drawString("Destination Date", LABEL_LEFT_X, 44);
-  tft.drawString("Current Date", LABEL_LEFT_X, 72);
-  tft.drawString("Last Departure", LABEL_LEFT_X, 100);
+  renderLabel("Destination Date", 44);
+  renderLabel("Current Date", 72);
+  renderLabel("Last Departure", 100);
 }
 
 void DisplayController::renderInterceptLabels() {
@@ -64,10 +90,8 @@ void DisplayController::renderInterceptLabels() {
 }
 
 void DisplayController::renderSystemLabels() {
-  tft.setTextColor(COLOR_NEON_GREEN);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.drawString("Core Power", LABEL_LEFT_X, 421);
-  tft.drawString("Service Link", LABEL_LEFT_X, 449);
+  renderLabel("Core Power", 421);
+  renderLabel("Service Link", 449);
 }
 
 void DisplayController::renderShieldChrome() {
@@ -81,12 +105,10 @@ void DisplayController::renderShieldChrome() {
 }
 
 void DisplayController::renderShieldLabels() {
-  tft.setTextColor(COLOR_NEON_GREEN);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.drawString("Modules", SHIELDING_LEFT_X, 184);
-  tft.drawString("Calibrated", SHIELDING_LEFT_X, 218);
-  tft.drawString("Power", SHIELDING_LEFT_X, 252);
-  tft.drawString("Detection Risk", SHIELDING_LEFT_X, 285);
+  renderShieldLabel("Modules", 184);
+  renderShieldLabel("Calibrated", 218);
+  renderShieldLabel("Power", 252);
+  renderShieldLabel("Detection Risk", 285);
 }
 
 void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16_t year) {
@@ -100,13 +122,8 @@ void DisplayController::updateDestinationDate(uint8_t month, uint8_t day, uint16
 
   // Clear old Value
   tft.fillRect(197, 44, 110, 15, TFT_BLACK);
-
   // Render new Value
-  tft.setTextColor(TFT_YELLOW);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(buf, VALUE_RIGHT_X, 44);
-  tft.setTextDatum(TL_DATUM);
+  renderValue(buf, 44, TFT_YELLOW);
 }
 
 void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t year) {
@@ -115,13 +132,8 @@ void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t y
 
   // Clear old Value
   tft.fillRect(197, 72, 110, 15, TFT_BLACK);
-
   // Render new Value
-  tft.setTextColor(TFT_WHITE);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(buf, VALUE_RIGHT_X, 72);
-  tft.setTextDatum(TL_DATUM);
+  renderValue(buf, 72, TFT_WHITE);
 }
 
 void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t year) {
@@ -130,13 +142,8 @@ void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t
 
   // Clear old Value
   tft.fillRect(197, 100, 110, 15, TFT_BLACK);
-
   // Render new Value
-  tft.setTextColor(TFT_LIGHTGREY);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(buf, VALUE_RIGHT_X, 100);
-  tft.setTextDatum(TL_DATUM);
+  renderValue(buf, 100, TFT_LIGHTGREY);
 }
 
 void DisplayController::updateShieldModules(int online, int calibrated) {
@@ -179,13 +186,8 @@ void DisplayController::updateShieldPower(int calibrated, int total) {
 
   // Clear old Value
   tft.fillRect(200, 252, 100, 15, TFT_BLACK);
-
   // Render new Value
-  tft.setTextColor(TFT_WHITE);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(buf, SHIELDING_RIGHT_X, 252);
-  tft.setTextDatum(TL_DATUM);
+  renderShieldValue(buf, 252, TFT_WHITE);
 
   // Update detection risk based on shield power
   updateDetectionRisk(percentage);
@@ -216,13 +218,8 @@ void DisplayController::updateDetectionRisk(float percentage) {
 
   // Clear old Value
   tft.fillRect(200, 285, 100, 15, TFT_BLACK);
-
   // Render new Value
-  tft.setTextColor(COLOR_WARNING_ORANGE);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(riskLevel, SHIELDING_RIGHT_X, 285);
-  tft.setTextDatum(TL_DATUM);
+  renderShieldValue(riskLevel, 285, COLOR_WARNING_ORANGE);
 }
 
 void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds) {
@@ -240,11 +237,7 @@ void DisplayController::updateInterceptWindow(int hours, int minutes, int second
 }
 
 void DisplayController::updateCorePower(const String& status) {
-  tft.setTextColor(TFT_WHITE);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(status, VALUE_RIGHT_X, 421);
-  tft.setTextDatum(TL_DATUM);
+  renderValue(status, 421, TFT_WHITE);
 }
 
 void DisplayController::updateServiceLink(bool connected) {
@@ -252,12 +245,7 @@ void DisplayController::updateServiceLink(bool connected) {
   const uint16_t color = connected ? TFT_WHITE : COLOR_WARNING_ORANGE;
 
   // Clear old Value
-  tft.fillRect(174, 451, 140, 15, TFT_BLACK);
-
+  tft.fillRect(174, 449, 140, 15, TFT_BLACK);
   // Render new Value
-  tft.setTextColor(color);
-  tft.setFreeFont(&FreeMonoBold9pt7b);
-  tft.setTextDatum(TR_DATUM);
-  tft.drawString(status, VALUE_RIGHT_X, 449);
-  tft.setTextDatum(TL_DATUM);
+  renderValue(status, 449, color);
 }

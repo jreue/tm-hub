@@ -42,4 +42,10 @@ class DisplayController {
     void renderModuleCalibrationProgress(int count);
     void updateShieldPower(int calibrated, int total);
     void updateDetectionRisk(float percentage);
+
+    void renderLabel(const String& text, int y);
+    void renderShieldLabel(const String& text, int y);
+
+    void renderValue(const String& text, int y, uint16_t color);
+    void renderShieldValue(const String& text, int y, uint16_t color);
 };

@@ -20,6 +20,9 @@
 #define MATRIX_COLS 4
 #define MATRIX_ROWS 12
 
+// Buttons
+#define TRAVEL_BUTTON_PIN 32
+
 // ====================
 // ESP-NOW Configuration
 // ====================

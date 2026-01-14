@@ -62,6 +62,12 @@ DeviceState deviceStates[NUM_DEVICES];
 int interceptWindowSeconds = 48 * 60 * 60;  // 48 hours = 172800 seconds
 unsigned long lastInterceptUpdate = 0;
 
+// Button debouncing
+int lastButtonState = HIGH;
+int buttonState = HIGH;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 50;
+
 // Helper to get device index from ID
 int getDeviceIndex(uint8_t deviceId) {
   for (int i = 0; i < NUM_DEVICES; i++) {
@@ -94,10 +100,14 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 void initDevices();
 void updateDeviceStatusDisplay();
 void updateDeviceStateOnScanner(DeviceMessage msg);
+void handleTravelButtonPress();
 
 void setup() {
   Serial.begin(115200);
   Serial.println("HUB Starting...");
+
+  Serial.printf("Travel Button PIN: %d\n", TRAVEL_BUTTON_PIN);
+  pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
 
   ledHelper.begin();
   displayController.begin(NUM_DEVICES);
@@ -139,6 +149,25 @@ void setup() {
 }
 
 void loop() {
+  // Simple button debouncing
+  int reading = digitalRead(TRAVEL_BUTTON_PIN);
+
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      if (buttonState == LOW) {
+        handleTravelButtonPress();
+      }
+    }
+  }
+
+  lastButtonState = reading;
+
   // gameEngine.loop();
 
   // Animate calibrated devices
@@ -301,6 +330,11 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
   updateDeviceStatusDisplay();
+}
+
+void handleTravelButtonPress() {
+  Serial.println(">>> Travel button pressed! <<<");
+  // TODO: Add travel logic here
 }
 
 void initDevices() {

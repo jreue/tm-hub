@@ -93,7 +93,7 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 
 void initDevices();
 void updateDeviceStatusDisplay();
-void updateDeviceStateOnScanner();
+void updateDeviceStateOnScanner(DeviceMessage msg);
 
 void setup() {
   Serial.begin(115200);
@@ -278,6 +278,8 @@ void handleDeviceMessage(DeviceMessage msg) {
       handleDeviceOffline(deviceIndex, msg.id);
       break;
   }
+
+  updateDeviceStateOnScanner(msg);
 }
 
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
@@ -325,10 +327,11 @@ void updateDeviceStatusDisplay() {
 
   displayController.updateShieldModules(onlineCount, calibratedCount);
 
-  updateDeviceStateOnScanner();
+  // updateDeviceStateOnScanner();
 }
 
-void updateDeviceStateOnScanner() {
+void updateDeviceStateOnScanner(DeviceMessage msg) {
   Serial.println("Sending device state update to scanner...");
-  esp_now_send(scannerMacAddress, (uint8_t*)"PING", 4);
+
+  esp_now_send(scannerMacAddress, (uint8_t*)&msg, sizeof(msg));
 }

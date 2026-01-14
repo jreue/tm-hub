@@ -23,4 +23,5 @@
 // ====================
 // ESP-NOW Configuration
 // ====================
+#define DEVICE_ID 1
 #define SCANNER_MAC_ADDRESS {0x44, 0x1D, 0x64, 0xF7, 0x4C, 0xEC}

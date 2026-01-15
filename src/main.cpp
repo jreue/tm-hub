@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include <EspNowHelper.h>
 #include <MessageStructs.h>
-#include <WiFi.h>
-#include <esp_now.h>
 
 #include "DisplayController.h"
 #include "GameEngine.h"

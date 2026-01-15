@@ -177,21 +177,21 @@ void handleESPNowDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw
   }
   Serial.println();
 
-  Serial.printf("ESP ID: %d\n", header.id);
+  Serial.printf("ESP ID: %d\n", header.deviceId);
+  Serial.printf("Device Type: %d\n", header.deviceType);
   Serial.printf("Message Type: %d\n", header.messageType);
 
-  if (header.messageType == MSG_TYPE_CONNECT || header.messageType == MSG_TYPE_STATUS ||
-      header.messageType == MSG_TYPE_DISCONNECT) {
+  if (header.deviceType == DEVICE_TYPE_MODULE) {
     // Device Messages
     DeviceMessage deviceMsg;
     memcpy(&deviceMsg, incomingDataRaw, sizeof(DeviceMessage));
     handleDeviceMessage(deviceMsg);
-  } else if (header.messageType == MSG_TYPE_DATE_UPDATE) {
+  } else if (header.deviceType == DEVICE_TYPE_DATE) {
     // Date Messages
     DateMessage dateMsg;
     memcpy(&dateMsg, incomingDataRaw, sizeof(DateMessage));
     handleDateChanged(dateMsg.month, dateMsg.day, dateMsg.year);
-  } else if (header.messageType == MSG_TYPE_SCANNER_CONNECTED) {
+  } else if (header.deviceType == DEVICE_TYPE_SCANNER) {
     // Scanner Messages
     ScannerMessage scannerMsg;
     memcpy(&scannerMsg, incomingDataRaw, sizeof(ScannerMessage));
@@ -212,8 +212,11 @@ void handleScannerMessage(ScannerMessage msg) {
   Serial.printf("Handling scanner message type: %d\n", msg.messageType);
 
   switch (msg.messageType) {
-    case MSG_TYPE_SCANNER_CONNECTED:
+    case MSG_TYPE_CONNECT:
       handleScannerConnected();
+      break;
+    case MSG_TYPE_DATA:
+      Serial.println("Received data message from scanner. Nothing to do yet.");
       break;
     default:
       Serial.println("Unknown scanner message type.");
@@ -227,11 +230,11 @@ void handleScannerConnected() {
 }
 
 void handleDeviceMessage(DeviceMessage msg) {
-  Serial.printf("Handling device message from ID: %d\n", msg.id);
+  Serial.printf("Handling device message from ID: %d\n", msg.deviceId);
 
-  int deviceIndex = getDeviceIndex(msg.id);
+  int deviceIndex = getDeviceIndex(msg.deviceId);
   if (deviceIndex < 0) {
-    Serial.printf("Unknown device ID: %d\n", msg.id);
+    Serial.printf("Unknown device ID: %d\n", msg.deviceId);
     return;
   }
 
@@ -244,27 +247,22 @@ void handleDeviceMessage(DeviceMessage msg) {
       deviceStates[deviceIndex].available = true;
       deviceStates[deviceIndex].calibrated = msg.isCalibrated;
       deviceStates[deviceIndex].lastSeen = millis();
-      handleDeviceOnline(deviceIndex, msg.id, msg.isCalibrated);
+      handleDeviceOnline(deviceIndex, msg.deviceId, msg.isCalibrated);
       break;
-
-    case MSG_TYPE_STATUS:
+    case MSG_TYPE_DATA:
       deviceStates[deviceIndex].available = true;
       deviceStates[deviceIndex].calibrated = msg.isCalibrated;
       deviceStates[deviceIndex].lastSeen = millis();
 
       // Only trigger handlers if state actually changed
       if (!wasAvailable) {
-        handleDeviceOnline(deviceIndex, msg.id, msg.isCalibrated);
+        handleDeviceOnline(deviceIndex, msg.deviceId, msg.isCalibrated);
       } else if (wasCalibrated != msg.isCalibrated) {
-        handleDeviceCalibrationChange(deviceIndex, msg.id, msg.isCalibrated);
+        handleDeviceCalibrationChange(deviceIndex, msg.deviceId, msg.isCalibrated);
       }
       break;
-
-    case MSG_TYPE_DISCONNECT:
-      deviceStates[deviceIndex].available = false;
-      deviceStates[deviceIndex].calibrated = false;
-      handleDeviceOffline(deviceIndex, msg.id);
-      break;
+    default:
+      Serial.println("Unknown device message type.");
   }
 
   updateDeviceStateOnScanner(msg);
@@ -274,13 +272,6 @@ void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
   Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
 
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-  updateDeviceStatusDisplay();
-}
-
-void handleDeviceOffline(int deviceIndex, uint8_t deviceId) {
-  Serial.printf("Device (%d): OFFLINE\n", deviceId);
-
-  ledHelper.updateStatusLEDs(deviceIndex, false, false);
   updateDeviceStatusDisplay();
 }
 

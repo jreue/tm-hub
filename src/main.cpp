@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <EspNowHelper.h>
 #include <MessageStructs.h>
 #include <WiFi.h>
 #include <esp_now.h>
@@ -8,6 +9,7 @@
 #include "LEDStatusHelper.h"
 #include "hardware_config.h"
 
+EspNowHelper espNowHelper;
 LEDStatusHelper ledHelper;
 DisplayController displayController;
 
@@ -39,21 +41,16 @@ int getDeviceIndex(uint8_t deviceId) {
 
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
 
-// Generic Message Handler
-void handleESPNowDataSent(const uint8_t* mac_addr, esp_now_send_status_t status);
-void handleESPNowDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len);
-
 // Date Message Handlers
-void handleDateChanged(uint8_t month, uint8_t day, uint16_t year);
+void handleDateChanged(const DateMessage& msg);
 
 // Scanner Message Handlers
-void handleScannerMessage(ScannerMessage msg);
+void handleScannerMessage(const ScannerMessage& msg);
 void handleScannerConnected();
 
 // Device Message Handlers
-void handleDeviceMessage(DeviceMessage msg);
+void handleDeviceMessage(const DeviceMessage& msg);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
-void handleDeviceOffline(int deviceIndex, uint8_t deviceId);
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
 
 void initDevices();
@@ -79,30 +76,10 @@ void setup() {
   }
   Serial.println("]");
 
-  WiFi.mode(WIFI_STA);
-  Serial.printf("HUB MAC Address: %s\n", WiFi.macAddress().c_str());
-
-  Serial.println("Initializing ESP-NOW...");
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
-
-  esp_now_register_send_cb(handleESPNowDataSent);
-  esp_now_register_recv_cb(handleESPNowDataReceived);
-
-  Serial.println("Adding ESP-NOW Peers...");
-  esp_now_peer_info_t peerInfo;
-  memset(&peerInfo, 0, sizeof(peerInfo));
-  memcpy(peerInfo.peer_addr, scannerMacAddress, 6);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-
-  // Add Scanner peer
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("Failed to add scanner peer");
-    return;
-  }
+  espNowHelper.begin(scannerMacAddress, DEVICE_ID);
+  espNowHelper.registerDateMessageHandler(handleDateChanged);
+  espNowHelper.registerScannerMessageHandler(handleScannerMessage);
+  espNowHelper.registerModuleMessageHandler(handleDeviceMessage);
 
   initDevices();
 }
@@ -151,64 +128,12 @@ void loop() {
   }
 }
 
-void handleESPNowDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
-  if (status == ESP_NOW_SEND_SUCCESS) {
-    Serial.println("  ✓ Delivery confirmed");
-  } else {
-    Serial.println("  ✗ Delivery failed");
-  }
-  Serial.println("------------------------");
+void handleDateChanged(const DateMessage& msg) {
+  Serial.printf("Date Update Received: %02d/%02d/%04d\n", msg.month, msg.day, msg.year);
+  displayController.updateTargetDate(msg.month, msg.day, msg.year);
 }
 
-void handleESPNowDataReceived(const uint8_t* mac, const uint8_t* incomingDataRaw, int len) {
-  // Small delay to prevent serial corruption when called from WiFi task
-  delayMicroseconds(100);
-
-  // Read message header to determine type
-  EspNowHeader header;
-  memcpy(&header, incomingDataRaw, sizeof(EspNowHeader));
-
-  Serial.println("--- ESP-NOW Data Received ---");
-  Serial.print("MAC Address: ");
-  for (int i = 0; i < 6; i++) {
-    Serial.printf("%02X", mac[i]);
-    if (i < 5)
-      Serial.print(":");
-  }
-  Serial.println();
-
-  Serial.printf("ESP ID: %d\n", header.deviceId);
-  Serial.printf("Device Type: %d\n", header.deviceType);
-  Serial.printf("Message Type: %d\n", header.messageType);
-
-  if (header.deviceType == DEVICE_TYPE_MODULE) {
-    // Device Messages
-    DeviceMessage deviceMsg;
-    memcpy(&deviceMsg, incomingDataRaw, sizeof(DeviceMessage));
-    handleDeviceMessage(deviceMsg);
-  } else if (header.deviceType == DEVICE_TYPE_DATE) {
-    // Date Messages
-    DateMessage dateMsg;
-    memcpy(&dateMsg, incomingDataRaw, sizeof(DateMessage));
-    handleDateChanged(dateMsg.month, dateMsg.day, dateMsg.year);
-  } else if (header.deviceType == DEVICE_TYPE_SCANNER) {
-    // Scanner Messages
-    ScannerMessage scannerMsg;
-    memcpy(&scannerMsg, incomingDataRaw, sizeof(ScannerMessage));
-    handleScannerMessage(scannerMsg);
-  } else {
-    Serial.println("Unknown message type received.");
-  }
-
-  Serial.println("-----------------------------");
-}
-
-void handleDateChanged(uint8_t month, uint8_t day, uint16_t year) {
-  Serial.printf("Date Update Received: %02d/%02d/%04d\n", month, day, year);
-  displayController.updateTargetDate(month, day, year);
-}
-
-void handleScannerMessage(ScannerMessage msg) {
+void handleScannerMessage(const ScannerMessage& msg) {
   Serial.printf("Handling scanner message type: %d\n", msg.messageType);
 
   switch (msg.messageType) {
@@ -229,7 +154,7 @@ void handleScannerConnected() {
   displayController.updateServiceLink(true);
 }
 
-void handleDeviceMessage(DeviceMessage msg) {
+void handleDeviceMessage(const DeviceMessage& msg) {
   Serial.printf("Handling device message from ID: %d\n", msg.deviceId);
 
   int deviceIndex = getDeviceIndex(msg.deviceId);

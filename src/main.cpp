@@ -70,6 +70,7 @@ void refreshInterceptWindow();
 void initDevices();
 void updateDeviceStatusDisplay();
 void updateDeviceStateOnScanner(DeviceMessage msg);
+void checkTravelButton();
 void handleTravelButtonPress();
 
 void setup() {
@@ -110,24 +111,7 @@ void loop() {
     displayController.updateTargetDate(targetMonth, targetDay, targetYear);
   }
 
-  // Simple button debouncing
-  int reading = digitalRead(TRAVEL_BUTTON_PIN);
-
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
-  }
-
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != buttonState) {
-      buttonState = reading;
-
-      if (buttonState == LOW) {
-        handleTravelButtonPress();
-      }
-    }
-  }
-
-  lastButtonState = reading;
+  checkTravelButton();
 
   ledHelper.animate();
 
@@ -165,6 +149,27 @@ void refreshInterceptWindow() {
                                               hoursChanged, minutesChanged);
     }
   }
+}
+
+void checkTravelButton() {
+  // Simple button debouncing
+  int reading = digitalRead(TRAVEL_BUTTON_PIN);
+
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      if (buttonState == LOW) {
+        handleTravelButtonPress();
+      }
+    }
+  }
+
+  lastButtonState = reading;
 }
 
 void handleDateChanged(const DateMessage& msg) {

@@ -21,6 +21,10 @@ DeviceState deviceStates[NUM_DEVICES];
 int interceptWindowSeconds = 48 * 60 * 60;  // 48 hours = 172800 seconds
 unsigned long lastInterceptUpdate = 0;
 
+// ESP-NOW message flags (volatile because accessed in ISR)
+volatile bool dateMessagePending = false;
+DateMessage pendingDateMessage;
+
 // Button debouncing
 int lastButtonState = HIGH;
 int buttonState = HIGH;
@@ -84,6 +88,13 @@ void setup() {
 }
 
 void loop() {
+  // Process pending ESP-NOW messages first
+  if (dateMessagePending) {
+    dateMessagePending = false;
+    displayController.updateTargetDate(pendingDateMessage.month, pendingDateMessage.day,
+                                       pendingDateMessage.year);
+  }
+
   // Simple button debouncing
   int reading = digitalRead(TRAVEL_BUTTON_PIN);
 
@@ -106,6 +117,8 @@ void loop() {
   ledHelper.animate();
 
   refreshInterceptWindow();
+
+  delay(10);  // Small delay to avoid busy loop
 }
 
 void refreshInterceptWindow() {
@@ -130,7 +143,9 @@ void refreshInterceptWindow() {
 
 void handleDateChanged(const DateMessage& msg) {
   Serial.printf("Date Update Received: %02d/%02d/%04d\n", msg.month, msg.day, msg.year);
-  displayController.updateTargetDate(msg.month, msg.day, msg.year);
+  // Don't update display from ISR context - set flag instead
+  pendingDateMessage = msg;
+  dateMessagePending = true;
 }
 
 void handleScannerMessage(const ScannerMessage& msg) {

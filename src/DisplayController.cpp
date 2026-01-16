@@ -89,6 +89,11 @@ void DisplayController::renderInterceptLabels() {
   tft.setTextDatum(TC_DATUM);
   tft.drawString("<<< INTERCEPT WINDOW >>>", 160, 336);
   tft.setTextDatum(TL_DATUM);
+
+  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
+  tft.setFreeFont(&FreeMonoBold24pt7b);
+  tft.drawString(":", 104, 352);
+  tft.drawString(":", 188, 352);
 }
 
 void DisplayController::renderSystemLabels() {
@@ -229,18 +234,30 @@ void DisplayController::updateDetectionRisk(float percentage) {
   renderShieldValue(riskLevel, SHIELDING_DETECTION_RISK_Y, COLOR_WARNING_ORANGE);
 }
 
-void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds) {
-  // Format the time string (HH:MM:SS)
-  char buf[16];
-  sprintf(buf, "%02d:%02d:%02d", hours, minutes, seconds);
-
-  // Clear old Value
-  tft.fillRect(48, 356, 224, 40, TFT_BLACK);
-
-  // Render new Value
+void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds,
+                                              bool hoursChanged, bool minutesChanged) {
   tft.setTextColor(COLOR_INTERCEPT_ORANGE);
   tft.setFreeFont(&FreeMonoBold24pt7b);
-  tft.drawString(buf, 48, 356);
+
+  // Only update the parts that changed to avoid flicker
+  char buf[4];
+
+  if (hoursChanged) {
+    sprintf(buf, "%02d", hours);
+    tft.fillRect(48, 356, 56, 40, TFT_BLACK);  // Clear hours section
+    tft.drawString(buf, 48, 356);
+  }
+
+  if (minutesChanged) {
+    sprintf(buf, "%02d", minutes);
+    tft.fillRect(132, 356, 56, 40, TFT_BLACK);  // Clear minutes section
+    tft.drawString(buf, 132, 356);
+  }
+
+  // Seconds always change
+  sprintf(buf, "%02d", seconds);
+  tft.fillRect(216, 356, 56, 40, TFT_BLACK);  // Clear seconds section
+  tft.drawString(buf, 216, 356);
 }
 
 void DisplayController::updateCorePower(const String& status) {

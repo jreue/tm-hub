@@ -36,7 +36,8 @@ class DisplayController {
     void updateCurrentDate(uint8_t month, uint8_t day, uint16_t year);
     void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);
     void updateShieldModules(int online, int calibrated);
-    void updateInterceptWindow(int hours, int minutes, int seconds);
+    void updateInterceptWindow(int hours, int minutes, int seconds, bool hoursChanged = true,
+                               bool minutesChanged = true);
     void updateCorePower(const String& status);
     void updateServiceLink(bool connected);
 

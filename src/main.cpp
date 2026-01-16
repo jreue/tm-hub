@@ -28,6 +28,9 @@ uint16_t lastYear = 2025;
 // Intercept window timer (starts at 48 hours in seconds)
 int interceptWindowSeconds = 48 * 60 * 60;  // 48 hours = 172800 seconds
 unsigned long lastInterceptUpdate = 0;
+int interceptHours = 48;
+int interceptMinutes = 0;
+int interceptSeconds = 0;
 
 // ESP-NOW message flags (volatile because accessed in ISR)
 volatile bool dateMessagePending = false;
@@ -144,11 +147,22 @@ void refreshInterceptWindow() {
       interceptWindowSeconds--;
 
       // Convert seconds to hours, minutes, seconds
-      int hours = interceptWindowSeconds / 3600;
-      int minutes = (interceptWindowSeconds % 3600) / 60;
-      int seconds = interceptWindowSeconds % 60;
+      int newHours = interceptWindowSeconds / 3600;
+      int newMinutes = (interceptWindowSeconds % 3600) / 60;
+      int newSeconds = interceptWindowSeconds % 60;
 
-      displayController.updateInterceptWindow(hours, minutes, seconds);
+      // Determine what changed
+      bool hoursChanged = (newHours != interceptHours);
+      bool minutesChanged = (newMinutes != interceptMinutes);
+
+      // Update stored values
+      interceptHours = newHours;
+      interceptMinutes = newMinutes;
+      interceptSeconds = newSeconds;
+
+      // Update display (seconds always change)
+      displayController.updateInterceptWindow(interceptHours, interceptMinutes, interceptSeconds,
+                                              hoursChanged, minutesChanged);
     }
   }
 }

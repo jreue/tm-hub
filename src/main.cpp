@@ -55,6 +55,7 @@ int getDeviceIndex(uint8_t deviceId) {
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
 
 // Date Message Handlers
+void processPendingDateMessage();
 void handleDateChanged(const DateMessage& msg);
 
 // Scanner Message Handlers
@@ -101,15 +102,7 @@ void setup() {
 }
 
 void loop() {
-  // Process pending ESP-NOW messages first
-  if (dateMessagePending) {
-    dateMessagePending = false;
-    // Store the incoming date as the target date
-    targetMonth = pendingDateMessage.month;
-    targetDay = pendingDateMessage.day;
-    targetYear = pendingDateMessage.year;
-    displayController.updateTargetDate(targetMonth, targetDay, targetYear);
-  }
+  processPendingDateMessage();
 
   checkTravelButton();
 
@@ -148,6 +141,18 @@ void refreshInterceptWindow() {
       displayController.updateInterceptWindow(interceptHours, interceptMinutes, interceptSeconds,
                                               hoursChanged, minutesChanged);
     }
+  }
+}
+
+void processPendingDateMessage() {
+  // Process pending ESP-NOW messages first
+  if (dateMessagePending) {
+    dateMessagePending = false;
+    // Store the incoming date as the target date
+    targetMonth = pendingDateMessage.month;
+    targetDay = pendingDateMessage.day;
+    targetYear = pendingDateMessage.year;
+    displayController.updateTargetDate(targetMonth, targetDay, targetYear);
   }
 }
 

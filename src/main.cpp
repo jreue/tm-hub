@@ -51,6 +51,7 @@ void handleDeviceMessage(const DeviceMessage& msg);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
 
+void refreshInterceptWindow();
 void initDevices();
 void updateDeviceStatusDisplay();
 void updateDeviceStateOnScanner(DeviceMessage msg);
@@ -102,11 +103,12 @@ void loop() {
 
   lastButtonState = reading;
 
-  // gameEngine.loop();
-
-  // Animate calibrated devices
   ledHelper.animate();
 
+  refreshInterceptWindow();
+}
+
+void refreshInterceptWindow() {
   unsigned long currentMillis = millis();
 
   // Update intercept window countdown every second

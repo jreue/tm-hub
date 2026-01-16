@@ -30,7 +30,8 @@
 class DisplayController {
   public:
     DisplayController();
-    void begin(int deviceCount);
+    void begin(int deviceCount, uint8_t currentMonth, uint8_t currentDay, uint16_t currentYear,
+               uint8_t lastMonth, uint8_t lastDay, uint16_t lastYear);
     void updateTargetDate(uint8_t month = 0, uint8_t day = 0, uint16_t year = 0);
     void updateCurrentDate(uint8_t month, uint8_t day, uint16_t year);
     void updateLastDeparture(uint8_t month, uint8_t day, uint16_t year);

@@ -3,7 +3,9 @@
 DisplayController::DisplayController() {
 }
 
-void DisplayController::begin(int deviceCount) {
+void DisplayController::begin(int deviceCount, uint8_t currentMonth, uint8_t currentDay,
+                              uint16_t currentYear, uint8_t lastMonth, uint8_t lastDay,
+                              uint16_t lastYear) {
   totalDevices = deviceCount;
 
   tft.init();
@@ -20,8 +22,8 @@ void DisplayController::begin(int deviceCount) {
   renderShieldLabels();
 
   updateTargetDate();
-  updateCurrentDate(1, 1, 2056);
-  updateLastDeparture(12, 25, 2025);
+  updateCurrentDate(currentMonth, currentDay, currentYear);
+  updateLastDeparture(lastMonth, lastDay, lastYear);
 
   updateShieldModules(0, 0);
 

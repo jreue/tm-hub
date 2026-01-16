@@ -17,6 +17,14 @@ const uint8_t KNOWN_DEVICE_IDS[] = {DEVICE_1_ID, DEVICE_2_ID, DEVICE_3_ID};
 const int NUM_DEVICES = sizeof(KNOWN_DEVICE_IDS) / sizeof(KNOWN_DEVICE_IDS[0]);
 DeviceState deviceStates[NUM_DEVICES];
 
+// Date state tracking
+uint8_t targetMonth = 0, targetDay = 0;
+uint16_t targetYear = 0;
+uint8_t currentMonth = 1, currentDay = 1;
+uint16_t currentYear = 2056;
+uint8_t lastMonth = 12, lastDay = 25;
+uint16_t lastYear = 2025;
+
 // Intercept window timer (starts at 48 hours in seconds)
 int interceptWindowSeconds = 48 * 60 * 60;  // 48 hours = 172800 seconds
 unsigned long lastInterceptUpdate = 0;
@@ -69,7 +77,8 @@ void setup() {
   pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
 
   ledHelper.begin();
-  displayController.begin(NUM_DEVICES);
+  displayController.begin(NUM_DEVICES, currentMonth, currentDay, currentYear, lastMonth, lastDay,
+                          lastYear);
 
   Serial.print("Known Device IDs: [");
   for (int i = 0; i < NUM_DEVICES; i++) {
@@ -91,8 +100,11 @@ void loop() {
   // Process pending ESP-NOW messages first
   if (dateMessagePending) {
     dateMessagePending = false;
-    displayController.updateTargetDate(pendingDateMessage.month, pendingDateMessage.day,
-                                       pendingDateMessage.year);
+    // Store the incoming date as the target date
+    targetMonth = pendingDateMessage.month;
+    targetDay = pendingDateMessage.day;
+    targetYear = pendingDateMessage.year;
+    displayController.updateTargetDate(targetMonth, targetDay, targetYear);
   }
 
   // Simple button debouncing
@@ -224,7 +236,28 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 
 void handleTravelButtonPress() {
   Serial.println(">>> Travel button pressed! <<<");
-  // TODO: Add travel logic here
+
+  // Roll the dates: last <- current <- target, and reset target
+  lastMonth = currentMonth;
+  lastDay = currentDay;
+  lastYear = currentYear;
+
+  currentMonth = targetMonth;
+  currentDay = targetDay;
+  currentYear = targetYear;
+
+  targetMonth = 0;
+  targetDay = 0;
+  targetYear = 0;
+
+  // Update the display with the new dates
+  displayController.updateLastDeparture(lastMonth, lastDay, lastYear);
+  displayController.updateCurrentDate(currentMonth, currentDay, currentYear);
+  displayController.updateTargetDate(targetMonth, targetDay, targetYear);
+
+  Serial.printf(
+      "Dates rolled - Last: %02d/%02d/%04d, Current: %02d/%02d/%04d, Target: --/--/----\n",
+      lastMonth, lastDay, lastYear, currentMonth, currentDay, currentYear);
 }
 
 void initDevices() {

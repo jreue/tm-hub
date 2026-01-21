@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-struct GameState {
+struct EngineState {
     bool gameActive;
     unsigned long gameStartTime;
 };
@@ -15,7 +15,7 @@ class GameEngine {
     void loop();
 
   private:
-    GameState gameState;
+    EngineState gameState;
     String currentCode;
     unsigned long lastUpdate;
 

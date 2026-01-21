@@ -4,33 +4,21 @@
 
 #include "DisplayController.h"
 #include "GameEngine.h"
+#include "GameState.h"
 #include "LEDStatusHelper.h"
 #include "hardware_config.h"
 
 EspNowHelper espNowHelper;
 LEDStatusHelper ledHelper;
 DisplayController displayController;
-
+GameState gameState;
 GameEngine gameEngine;
 
 const uint8_t KNOWN_DEVICE_IDS[] = {DEVICE_1_ID, DEVICE_2_ID, DEVICE_3_ID};
 const int NUM_DEVICES = sizeof(KNOWN_DEVICE_IDS) / sizeof(KNOWN_DEVICE_IDS[0]);
-DeviceState deviceStates[NUM_DEVICES];
 
-// Date state tracking
-uint8_t targetMonth = 0, targetDay = 0;
-uint16_t targetYear = 0;
-uint8_t currentMonth = 1, currentDay = 1;
-uint16_t currentYear = 2056;
-uint8_t lastMonth = 12, lastDay = 25;
-uint16_t lastYear = 2025;
-
-// Intercept window timer (starts at 48 hours in seconds)
-int interceptWindowSeconds = 48 * 60 * 60;  // 48 hours = 172800 seconds
+// Timers
 unsigned long lastInterceptUpdate = 0;
-int interceptHours = 48;
-int interceptMinutes = 0;
-int interceptSeconds = 0;
 
 // ESP-NOW message flags (volatile because accessed in ISR)
 volatile bool dateMessagePending = false;
@@ -78,12 +66,22 @@ void setup() {
   Serial.begin(115200);
   Serial.println("HUB Starting...");
 
+  // Load saved game state from NVS
+  gameState.begin();
+  gameState.load();
+
   Serial.printf("Travel Button PIN: %d\n", TRAVEL_BUTTON_PIN);
   pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
 
   ledHelper.begin();
-  displayController.begin(NUM_DEVICES, currentMonth, currentDay, currentYear, lastMonth, lastDay,
-                          lastYear);
+
+  uint8_t targetMonth, targetDay, currentMonth, currentDay, lastMonth, lastDay;
+  uint16_t targetYear, currentYear, lastYear;
+  gameState.getTargetDate(targetMonth, targetDay, targetYear);
+  gameState.getCurrentDate(currentMonth, currentDay, currentYear);
+  gameState.getLastDate(lastMonth, lastDay, lastYear);
+  displayController.begin(NUM_DEVICES, targetMonth, targetDay, targetYear, currentMonth, currentDay,
+                          currentYear, lastMonth, lastDay, lastYear);
 
   Serial.print("Known Device IDs: [");
   for (int i = 0; i < NUM_DEVICES; i++) {
@@ -98,7 +96,12 @@ void setup() {
   espNowHelper.registerScannerMessageHandler(handleScannerMessage);
   espNowHelper.registerModuleMessageHandler(handleDeviceMessage);
 
-  initDevices();
+  // Restore device display states from loaded data
+  DeviceState* deviceStates = gameState.getDeviceStates();
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);
+  }
+  updateDeviceStatusDisplay();
 }
 
 void loop() {
@@ -120,26 +123,33 @@ void refreshInterceptWindow() {
   if (currentMillis - lastInterceptUpdate >= 1000) {
     lastInterceptUpdate = currentMillis;
 
+    int interceptWindowSeconds = gameState.getInterceptWindowSeconds();
     if (interceptWindowSeconds > 0) {
       interceptWindowSeconds--;
+      gameState.setInterceptWindowSeconds(interceptWindowSeconds);
 
-      // Convert seconds to hours, minutes, seconds
-      int newHours = interceptWindowSeconds / 3600;
-      int newMinutes = (interceptWindowSeconds % 3600) / 60;
-      int newSeconds = interceptWindowSeconds % 60;
+      // Get time components for display
+      int hours, minutes, seconds;
+      gameState.getInterceptWindowTime(hours, minutes, seconds);
 
-      // Determine what changed
-      bool hoursChanged = (newHours != interceptHours);
-      bool minutesChanged = (newMinutes != interceptMinutes);
+      // Track changes for display optimization (using static variables)
+      static int lastHours = -1;
+      static int lastMinutes = -1;
 
-      // Update stored values
-      interceptHours = newHours;
-      interceptMinutes = newMinutes;
-      interceptSeconds = newSeconds;
+      bool hoursChanged = (hours != lastHours);
+      bool minutesChanged = (minutes != lastMinutes);
 
-      // Update display (seconds always change)
-      displayController.updateInterceptWindow(interceptHours, interceptMinutes, interceptSeconds,
-                                              hoursChanged, minutesChanged);
+      lastHours = hours;
+      lastMinutes = minutes;
+
+      // Update display
+      displayController.updateInterceptWindow(hours, minutes, seconds, hoursChanged,
+                                              minutesChanged);
+
+      // Save to NVS when minutes change to reduce flash wear
+      if (minutesChanged) {
+        gameState.save();
+      }
     }
   }
 }
@@ -149,10 +159,10 @@ void processPendingDateMessage() {
   if (dateMessagePending) {
     dateMessagePending = false;
     // Store the incoming date as the target date
-    targetMonth = pendingDateMessage.month;
-    targetDay = pendingDateMessage.day;
-    targetYear = pendingDateMessage.year;
-    displayController.updateTargetDate(targetMonth, targetDay, targetYear);
+    gameState.setTargetDate(pendingDateMessage.month, pendingDateMessage.day,
+                            pendingDateMessage.year);
+    displayController.updateTargetDate(pendingDateMessage.month, pendingDateMessage.day,
+                                       pendingDateMessage.year);
   }
 }
 
@@ -214,21 +224,17 @@ void handleDeviceMessage(const DeviceMessage& msg) {
     return;
   }
 
-  bool wasAvailable = deviceStates[deviceIndex].available;
-  bool wasCalibrated = deviceStates[deviceIndex].calibrated;
+  bool wasAvailable, wasCalibrated;
+  gameState.getDeviceState(deviceIndex, wasAvailable, wasCalibrated);
 
   // Handle different message types
   switch (msg.messageType) {
     case MSG_TYPE_CONNECT:
-      deviceStates[deviceIndex].available = true;
-      deviceStates[deviceIndex].calibrated = msg.isCalibrated;
-      deviceStates[deviceIndex].lastSeen = millis();
+      gameState.setDeviceState(deviceIndex, true, msg.isCalibrated);
       handleDeviceOnline(deviceIndex, msg.deviceId, msg.isCalibrated);
       break;
     case MSG_TYPE_DATA:
-      deviceStates[deviceIndex].available = true;
-      deviceStates[deviceIndex].calibrated = msg.isCalibrated;
-      deviceStates[deviceIndex].lastSeen = millis();
+      gameState.setDeviceState(deviceIndex, true, msg.isCalibrated);
 
       // Only trigger handlers if state actually changed
       if (!wasAvailable) {
@@ -249,6 +255,7 @@ void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
 
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
   updateDeviceStatusDisplay();
+  gameState.save();
 }
 
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
@@ -256,38 +263,33 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
   updateDeviceStatusDisplay();
+  gameState.save();
 }
 
 void handleTravelButtonPress() {
   Serial.println(">>> Travel button pressed! <<<");
 
-  // Roll the dates: last <- current <- target, and reset target
-  lastMonth = currentMonth;
-  lastDay = currentDay;
-  lastYear = currentYear;
+  // Roll the dates
+  gameState.rollDates();
 
-  currentMonth = targetMonth;
-  currentDay = targetDay;
-  currentYear = targetYear;
-
-  targetMonth = 0;
-  targetDay = 0;
-  targetYear = 0;
+  // Get dates for display update
+  uint8_t targetMonth, targetDay, currentMonth, currentDay, lastMonth, lastDay;
+  uint16_t targetYear, currentYear, lastYear;
+  gameState.getTargetDate(targetMonth, targetDay, targetYear);
+  gameState.getCurrentDate(currentMonth, currentDay, currentYear);
+  gameState.getLastDate(lastMonth, lastDay, lastYear);
 
   // Update the display with the new dates
   displayController.updateLastDeparture(lastMonth, lastDay, lastYear);
   displayController.updateCurrentDate(currentMonth, currentDay, currentYear);
   displayController.updateTargetDate(targetMonth, targetDay, targetYear);
 
-  Serial.printf(
-      "Dates rolled - Last: %02d/%02d/%04d, Current: %02d/%02d/%04d, Target: --/--/----\n",
-      lastMonth, lastDay, lastYear, currentMonth, currentDay, currentYear);
+  gameState.save();
 }
 
 void initDevices() {
   for (int i = 0; i < NUM_DEVICES; i++) {
-    deviceStates[i].available = false;
-    deviceStates[i].calibrated = false;
+    gameState.setDeviceState(i, false, false);
     ledHelper.updateStatusLEDs(i, false, false);
   }
   updateDeviceStatusDisplay();
@@ -297,6 +299,7 @@ void updateDeviceStatusDisplay() {
   int onlineCount = 0;
   int calibratedCount = 0;
 
+  DeviceState* deviceStates = gameState.getDeviceStates();
   for (int i = 0; i < NUM_DEVICES; i++) {
     if (deviceStates[i].available) {
       onlineCount++;
@@ -307,8 +310,6 @@ void updateDeviceStatusDisplay() {
   }
 
   displayController.updateShieldModules(onlineCount, calibratedCount);
-
-  // updateDeviceStateOnScanner();
 }
 
 void updateDeviceStateOnScanner(DeviceMessage msg) {

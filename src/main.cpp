@@ -64,8 +64,8 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 
 void refreshInterceptWindow();
 void initDevices();
-void updateDeviceStatusDisplay();
-void updateDeviceStatusLeds();
+void updateDeviceStateOnHubDisplay();
+void updateDeviceStateOnHubLeds();
 void updateDeviceStateOnScanner(DeviceMessage msg);
 void checkTravelButton();
 void handleTravelButtonPress();
@@ -110,8 +110,8 @@ void setup() {
   espNowHelper.registerModuleMessageHandler(handleDeviceMessage);
 
   // Restore device display states from loaded data
-  updateDeviceStatusLeds();
-  updateDeviceStatusDisplay();
+  updateDeviceStateOnHubDisplay();
+  updateDeviceStateOnHubLeds();
 }
 
 void loop() {
@@ -286,7 +286,7 @@ void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
   Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
 
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-  updateDeviceStatusDisplay();
+  updateDeviceStateOnHubDisplay();
   gameState.save();
 }
 
@@ -294,7 +294,7 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
   Serial.printf("Device (%d): Changed to %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
 
   ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-  updateDeviceStatusDisplay();
+  updateDeviceStateOnHubDisplay();
   gameState.save();
 }
 
@@ -331,10 +331,10 @@ void initDevices() {
     gameState.setDeviceState(i, false, false);
     ledHelper.updateStatusLEDs(i, false, false);
   }
-  updateDeviceStatusDisplay();
+  updateDeviceStateOnHubDisplay();
 }
 
-void updateDeviceStatusDisplay() {
+void updateDeviceStateOnHubDisplay() {
   int onlineCount = 0;
   int calibratedCount = 0;
 
@@ -351,7 +351,7 @@ void updateDeviceStatusDisplay() {
   displayController.updateShieldModules(onlineCount, calibratedCount);
 }
 
-void updateDeviceStatusLeds() {
+void updateDeviceStateOnHubLeds() {
   DeviceState* deviceStates = gameState.getDeviceStates();
   for (int i = 0; i < NUM_DEVICES; i++) {
     ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);

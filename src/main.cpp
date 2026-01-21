@@ -74,15 +74,17 @@ void handleTravelButtonPress();
 void checkResetButton();
 void handleResetButtonPress();
 
+void logKnownDevices();
+
 void setup() {
   Serial.begin(115200);
   Serial.println("HUB Starting...");
 
-  // Load saved game state from NVS
+  logKnownDevices();
+  setupButtons();
+
   gameState.begin();
   gameState.load();
-
-  setupButtons();
 
   ledHelper.begin();
 
@@ -93,14 +95,6 @@ void setup() {
   gameState.getLastDate(lastMonth, lastDay, lastYear);
   displayController.begin(NUM_DEVICES, targetMonth, targetDay, targetYear, currentMonth, currentDay,
                           currentYear, lastMonth, lastDay, lastYear);
-
-  Serial.print("Known Device IDs: [");
-  for (int i = 0; i < NUM_DEVICES; i++) {
-    Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
-    if (i < NUM_DEVICES - 1)
-      Serial.print(", ");
-  }
-  Serial.println("]");
 
   espNowHelper.begin(scannerMacAddress, DEVICE_ID);
   espNowHelper.registerDateMessageHandler(handleDateChanged);
@@ -123,6 +117,16 @@ void loop() {
   refreshInterceptWindow();
 
   delay(10);  // Small delay to avoid busy loop
+}
+
+void logKnownDevices() {
+  Serial.print("Known Device IDs: [");
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
+    if (i < NUM_DEVICES - 1)
+      Serial.print(", ");
+  }
+  Serial.println("]");
 }
 
 void setupButtons() {

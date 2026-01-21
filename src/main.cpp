@@ -76,6 +76,8 @@ void handleResetButtonPress();
 
 void logKnownDevices();
 
+void updateDateStateOnHubDisplay();
+
 void setup() {
   Serial.begin(115200);
   Serial.println("HUB Starting...");
@@ -88,13 +90,7 @@ void setup() {
 
   ledHelper.begin();
 
-  uint8_t targetMonth, targetDay, currentMonth, currentDay, lastMonth, lastDay;
-  uint16_t targetYear, currentYear, lastYear;
-  gameState.getTargetDate(targetMonth, targetDay, targetYear);
-  gameState.getCurrentDate(currentMonth, currentDay, currentYear);
-  gameState.getLastDate(lastMonth, lastDay, lastYear);
-  displayController.begin(NUM_DEVICES, targetMonth, targetDay, targetYear, currentMonth, currentDay,
-                          currentYear, lastMonth, lastDay, lastYear);
+  displayController.begin(NUM_DEVICES);
 
   espNowHelper.begin(scannerMacAddress, DEVICE_ID);
   espNowHelper.registerDateMessageHandler(handleDateChanged);
@@ -102,6 +98,7 @@ void setup() {
   espNowHelper.registerModuleMessageHandler(handleDeviceMessage);
 
   // Restore device display states from loaded data
+  updateDateStateOnHubDisplay();
   updateDeviceStateOnHubDisplay();
   updateDeviceStateOnHubLeds();
 }
@@ -334,6 +331,18 @@ void handleResetButtonPress() {
   gameState.reset();
   Serial.println("NVS cleared. Restarting...");
   ESP.restart();
+}
+
+void updateDateStateOnHubDisplay() {
+  uint8_t targetMonth, targetDay, currentMonth, currentDay, lastMonth, lastDay;
+  uint16_t targetYear, currentYear, lastYear;
+  gameState.getTargetDate(targetMonth, targetDay, targetYear);
+  gameState.getCurrentDate(currentMonth, currentDay, currentYear);
+  gameState.getLastDate(lastMonth, lastDay, lastYear);
+
+  displayController.updateTargetDate(targetMonth, targetDay, targetYear);
+  displayController.updateCurrentDate(currentMonth, currentDay, currentYear);
+  displayController.updateLastDeparture(lastMonth, lastDay, lastYear);
 }
 
 void initDevices() {

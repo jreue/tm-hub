@@ -65,6 +65,7 @@ void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calib
 void refreshInterceptWindow();
 void initDevices();
 void updateDeviceStatusDisplay();
+void updateDeviceStatusLeds();
 void updateDeviceStateOnScanner(DeviceMessage msg);
 void checkTravelButton();
 void handleTravelButtonPress();
@@ -109,10 +110,7 @@ void setup() {
   espNowHelper.registerModuleMessageHandler(handleDeviceMessage);
 
   // Restore device display states from loaded data
-  DeviceState* deviceStates = gameState.getDeviceStates();
-  for (int i = 0; i < NUM_DEVICES; i++) {
-    ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);
-  }
+  updateDeviceStatusLeds();
   updateDeviceStatusDisplay();
 }
 
@@ -351,6 +349,13 @@ void updateDeviceStatusDisplay() {
   }
 
   displayController.updateShieldModules(onlineCount, calibratedCount);
+}
+
+void updateDeviceStatusLeds() {
+  DeviceState* deviceStates = gameState.getDeviceStates();
+  for (int i = 0; i < NUM_DEVICES; i++) {
+    ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);
+  }
 }
 
 void updateDeviceStateOnScanner(DeviceMessage msg) {

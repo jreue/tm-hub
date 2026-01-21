@@ -141,7 +141,11 @@ void DisplayController::updateTargetDate(uint8_t month, uint8_t day, uint16_t ye
 
 void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t year) {
   char buf[16];
-  sprintf(buf, "%02d/%02d/%04d", month, day, year);
+  if (month == 0 && day == 0 && year == 0) {
+    sprintf(buf, "--/--/----");
+  } else {
+    sprintf(buf, "%02d/%02d/%04d", month, day, year);
+  }
 
   // Clear old Value
   tft.fillRect(197, CURRENT_DATE_Y, 110, 15, TFT_BLACK);
@@ -151,7 +155,11 @@ void DisplayController::updateCurrentDate(uint8_t month, uint8_t day, uint16_t y
 
 void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t year) {
   char buf[16];
-  sprintf(buf, "%02d/%02d/%04d", month, day, year);
+  if (month == 0 && day == 0 && year == 0) {
+    sprintf(buf, "--/--/----");
+  } else {
+    sprintf(buf, "%02d/%02d/%04d", month, day, year);
+  }
 
   // Clear old Value
   tft.fillRect(197, LAST_DEPARTURE_Y, 110, 15, TFT_BLACK);

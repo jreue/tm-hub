@@ -13,6 +13,7 @@
 
 // Buttons
 #define TRAVEL_BUTTON_PIN 32
+#define RESET_BUTTON_PIN 33
 
 // ====================
 // ESP-NOW Configuration

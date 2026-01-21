@@ -30,6 +30,11 @@ int buttonState = HIGH;
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 50;
 
+// Reset button debouncing
+int lastResetButtonState = HIGH;
+int resetButtonState = HIGH;
+unsigned long lastResetDebounceTime = 0;
+
 // Helper to get device index from ID
 int getDeviceIndex(uint8_t deviceId) {
   for (int i = 0; i < NUM_DEVICES; i++) {
@@ -61,6 +66,8 @@ void updateDeviceStatusDisplay();
 void updateDeviceStateOnScanner(DeviceMessage msg);
 void checkTravelButton();
 void handleTravelButtonPress();
+void checkResetButton();
+void handleResetButtonPress();
 
 void setup() {
   Serial.begin(115200);
@@ -72,6 +79,9 @@ void setup() {
 
   Serial.printf("Travel Button PIN: %d\n", TRAVEL_BUTTON_PIN);
   pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
+
+  Serial.printf("Reset Button PIN: %d\n", RESET_BUTTON_PIN);
+  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
 
   ledHelper.begin();
 
@@ -108,6 +118,7 @@ void loop() {
   processPendingDateMessage();
 
   checkTravelButton();
+  checkResetButton();
 
   ledHelper.animate();
 
@@ -185,6 +196,27 @@ void checkTravelButton() {
   }
 
   lastButtonState = reading;
+}
+
+void checkResetButton() {
+  // Simple button debouncing
+  int reading = digitalRead(RESET_BUTTON_PIN);
+
+  if (reading != lastResetButtonState) {
+    lastResetDebounceTime = millis();
+  }
+
+  if ((millis() - lastResetDebounceTime) > debounceDelay) {
+    if (reading != resetButtonState) {
+      resetButtonState = reading;
+
+      if (resetButtonState == LOW) {
+        handleResetButtonPress();
+      }
+    }
+  }
+
+  lastResetButtonState = reading;
 }
 
 void handleDateChanged(const DateMessage& msg) {
@@ -285,6 +317,13 @@ void handleTravelButtonPress() {
   displayController.updateTargetDate(targetMonth, targetDay, targetYear);
 
   gameState.save();
+}
+
+void handleResetButtonPress() {
+  Serial.println(">>> Reset button pressed! Clearing NVS... <<<");
+  gameState.reset();
+  Serial.println("NVS cleared. Restarting...");
+  ESP.restart();
 }
 
 void initDevices() {

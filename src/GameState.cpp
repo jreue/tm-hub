@@ -115,6 +115,13 @@ void GameState::save() {
   Serial.println("Game state saved to NVS");
 }
 
+void GameState::reset() {
+  preferences.begin("game-state", false);
+  preferences.clear();
+  preferences.end();
+  Serial.println("NVS cleared");
+}
+
 void GameState::setTargetDate(uint8_t month, uint8_t day, uint16_t year) {
   targetMonth = month;
   targetDay = day;

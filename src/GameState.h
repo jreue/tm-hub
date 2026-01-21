@@ -44,6 +44,7 @@ class GameState {
     void begin();
     void load();
     void save();
+    void reset();
 
     void setTargetDate(uint8_t month, uint8_t day, uint16_t year);
     void getTargetDate(uint8_t& month, uint8_t& day, uint16_t& year);

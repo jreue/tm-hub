@@ -24,10 +24,10 @@ unsigned long lastInterceptUpdate = 0;
 volatile bool dateMessagePending = false;
 DateMessage pendingDateMessage;
 
-// Button debouncing
-int lastButtonState = HIGH;
-int buttonState = HIGH;
-unsigned long lastDebounceTime = 0;
+// Travel button debouncing
+int lastTravelButtonState = HIGH;
+int travelButtonState = HIGH;
+unsigned long lastTravelDebounceTime = 0;
 const unsigned long debounceDelay = 50;
 
 // Reset button debouncing
@@ -181,21 +181,21 @@ void checkTravelButton() {
   // Simple button debouncing
   int reading = digitalRead(TRAVEL_BUTTON_PIN);
 
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
+  if (reading != lastTravelButtonState) {
+    lastTravelDebounceTime = millis();
   }
 
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != buttonState) {
-      buttonState = reading;
+  if ((millis() - lastTravelDebounceTime) > debounceDelay) {
+    if (reading != travelButtonState) {
+      travelButtonState = reading;
 
-      if (buttonState == LOW) {
+      if (travelButtonState == LOW) {
         handleTravelButtonPress();
       }
     }
   }
 
-  lastButtonState = reading;
+  lastTravelButtonState = reading;
 }
 
 void checkResetButton() {

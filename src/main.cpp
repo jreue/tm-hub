@@ -62,6 +62,8 @@ void handleDeviceMessage(const DeviceMessage& msg);
 void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
 void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
 
+void setupButtons();
+
 void refreshInterceptWindow();
 void initDevices();
 void updateDeviceStateOnHubDisplay();
@@ -80,11 +82,7 @@ void setup() {
   gameState.begin();
   gameState.load();
 
-  Serial.printf("Travel Button PIN: %d\n", TRAVEL_BUTTON_PIN);
-  pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
-
-  Serial.printf("Reset Button PIN: %d\n", RESET_BUTTON_PIN);
-  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
+  setupButtons();
 
   ledHelper.begin();
 
@@ -125,6 +123,14 @@ void loop() {
   refreshInterceptWindow();
 
   delay(10);  // Small delay to avoid busy loop
+}
+
+void setupButtons() {
+  Serial.printf("Travel Button PIN: %d\n", TRAVEL_BUTTON_PIN);
+  pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
+
+  Serial.printf("Reset Button PIN: %d\n", RESET_BUTTON_PIN);
+  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
 }
 
 void refreshInterceptWindow() {

@@ -28,7 +28,7 @@ void GameState::begin() {
 }
 
 void GameState::load() {
-  preferences.begin("game-state", true);  // Open in read-only mode
+  preferences.begin(StorageKeys::STORAGE_NAMESPACE, true);  // Open in read-only mode
 
   // Load target date
   targetMonth = preferences.getUChar(StorageKeys::TARGET_MONTH, Defaults::TARGET_MONTH);
@@ -80,7 +80,7 @@ void GameState::load() {
 }
 
 void GameState::save() {
-  preferences.begin("game-state", false);
+  preferences.begin(StorageKeys::STORAGE_NAMESPACE, false);
 
   // Save target date
   preferences.putUChar(StorageKeys::TARGET_MONTH, targetMonth);
@@ -116,7 +116,7 @@ void GameState::save() {
 }
 
 void GameState::reset() {
-  preferences.begin("game-state", false);
+  preferences.begin(StorageKeys::STORAGE_NAMESPACE, false);
   preferences.clear();
   preferences.end();
   Serial.println("NVS cleared");

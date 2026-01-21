@@ -28,12 +28,14 @@ DateMessage pendingDateMessage;
 int lastTravelButtonState = HIGH;
 int travelButtonState = HIGH;
 unsigned long lastTravelDebounceTime = 0;
-const unsigned long debounceDelay = 50;
 
 // Reset button debouncing
 int lastResetButtonState = HIGH;
 int resetButtonState = HIGH;
 unsigned long lastResetDebounceTime = 0;
+
+// Shared button debouncing delay
+const unsigned long debounceDelay = 50;
 
 // Helper to get device index from ID
 int getDeviceIndex(uint8_t deviceId) {

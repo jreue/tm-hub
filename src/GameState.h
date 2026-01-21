@@ -5,6 +5,9 @@
 #include <Preferences.h>
 
 namespace StorageKeys {
+// Namespace key
+const char* const STORAGE_NAMESPACE = "game-state";
+
 // Date keys
 const char* const TARGET_MONTH = "target-month";
 const char* const TARGET_DAY = "target-day";

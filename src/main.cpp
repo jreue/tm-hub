@@ -358,11 +358,11 @@ void updateShieldModuleStateOnHubDisplay() {
   int onlineCount = 0;
   int calibratedCount = 0;
 
-  DeviceState* deviceStates = gameState.getShieldModuleStates();
+  ModuleState* moduleStates = gameState.getShieldModuleStates();
   for (int i = 0; i < NUM_MODULES; i++) {
-    if (deviceStates[i].available) {
+    if (moduleStates[i].available) {
       onlineCount++;
-      if (deviceStates[i].calibrated) {
+      if (moduleStates[i].calibrated) {
         calibratedCount++;
       }
     }
@@ -372,9 +372,9 @@ void updateShieldModuleStateOnHubDisplay() {
 }
 
 void updateShieldModuleStateOnHubLeds() {
-  DeviceState* deviceStates = gameState.getShieldModuleStates();
+  ModuleState* moduleStates = gameState.getShieldModuleStates();
   for (int i = 0; i < NUM_MODULES; i++) {
-    ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);
+    ledHelper.updateStatusLEDs(i, moduleStates[i].available, moduleStates[i].calibrated);
   }
 }
 

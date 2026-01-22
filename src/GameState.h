@@ -64,7 +64,7 @@ class GameState {
     // Shield module states
     void setShieldModuleState(int index, bool available, bool calibrated);
     void getShieldModuleState(int index, bool& available, bool& calibrated);
-    DeviceState* getShieldModuleStates();
+    ModuleState* getShieldModuleStates();
 
     // Date rolling (for travel button)
     void rollDates();
@@ -87,7 +87,7 @@ class GameState {
     int interceptSeconds;
 
     // Shield module states (max 10 shield modules)
-    DeviceState shieldModuleStates[10];
+    ModuleState shieldModuleStates[10];
     int numShieldModules;
 
     void updateInterceptTimeComponents();

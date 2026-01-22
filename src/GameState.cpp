@@ -195,7 +195,7 @@ void GameState::getShieldModuleState(int index, bool& available, bool& calibrate
   calibrated = shieldModuleStates[index].calibrated;
 }
 
-DeviceState* GameState::getShieldModuleStates() {
+ModuleState* GameState::getShieldModuleStates() {
   return shieldModuleStates;
 }
 

@@ -58,7 +58,7 @@ void handleScannerMessage(const ScannerMessage& msg);
 void handleScannerConnected();
 
 // Shield Module Message Handlers
-void handleShieldModuleMessage(const DeviceMessage& msg);
+void handleShieldModuleMessage(const ShieldModuleMessage& msg);
 void handleShieldModuleOnline(int moduleIndex, uint8_t moduleId, bool calibrated);
 void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, bool calibrated);
 
@@ -68,7 +68,7 @@ void refreshInterceptWindow();
 void initShieldModules();
 void updateShieldModuleStateOnHubDisplay();
 void updateShieldModuleStateOnHubLeds();
-void updateShieldModuleStateOnScanner(DeviceMessage msg);
+void updateShieldModuleStateOnScanner(ShieldModuleMessage msg);
 void checkTravelButton();
 void handleTravelButtonPress();
 void checkResetButton();
@@ -254,7 +254,7 @@ void handleScannerConnected() {
   displayController.updateServiceLink(true);
 }
 
-void handleShieldModuleMessage(const DeviceMessage& msg) {
+void handleShieldModuleMessage(const ShieldModuleMessage& msg) {
   Serial.printf("Handling shield module message from ID: %d\n", msg.deviceId);
 
   int moduleIndex = getShieldModuleIndex(msg.deviceId);
@@ -378,7 +378,7 @@ void updateShieldModuleStateOnHubLeds() {
   }
 }
 
-void updateShieldModuleStateOnScanner(DeviceMessage msg) {
+void updateShieldModuleStateOnScanner(ShieldModuleMessage msg) {
   Serial.println("Sending shield module state update to scanner...");
 
   esp_now_send(scannerMacAddress, (uint8_t*)&msg, sizeof(msg));

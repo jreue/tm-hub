@@ -19,7 +19,6 @@ GameState::GameState()
   for (int i = 0; i < 10; i++) {
     shieldModuleStates[i].available = false;
     shieldModuleStates[i].calibrated = false;
-    shieldModuleStates[i].lastSeen = 0;
   }
 }
 
@@ -59,7 +58,6 @@ void GameState::load() {
     String calKey = "d" + String(i) + "-calibrated";
     shieldModuleStates[i].available = preferences.getBool(availKey.c_str(), false);
     shieldModuleStates[i].calibrated = preferences.getBool(calKey.c_str(), false);
-    shieldModuleStates[i].lastSeen = 0;  // Reset lastSeen on boot
   }
 
   preferences.end();
@@ -179,7 +177,6 @@ void GameState::setShieldModuleState(int index, bool available, bool calibrated)
 
   shieldModuleStates[index].available = available;
   shieldModuleStates[index].calibrated = calibrated;
-  shieldModuleStates[index].lastSeen = millis();
 
   // Update numShieldModules if needed
   if (index >= numShieldModules) {

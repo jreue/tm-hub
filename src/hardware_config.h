@@ -1,9 +1,9 @@
 #pragma once
 
-// Known Shield Module Device IDs
-#define DEVICE_1_ID 101
-#define DEVICE_2_ID 102
-#define DEVICE_3_ID 103
+// Known Shield Module IDs
+#define MODULE_1_ID 101
+#define MODULE_2_ID 102
+#define MODULE_3_ID 103
 
 // LED Status Display
 #define LED_DATA_PIN 23

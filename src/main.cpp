@@ -14,8 +14,8 @@ DisplayController displayController;
 GameState gameState;
 GameEngine gameEngine;
 
-const uint8_t KNOWN_DEVICE_IDS[] = {DEVICE_1_ID, DEVICE_2_ID, DEVICE_3_ID};
-const int NUM_DEVICES = sizeof(KNOWN_DEVICE_IDS) / sizeof(KNOWN_DEVICE_IDS[0]);
+const uint8_t KNOWN_MODULE_IDS[] = {MODULE_1_ID, MODULE_2_ID, MODULE_3_ID};
+const int NUM_MODULES = sizeof(KNOWN_MODULE_IDS) / sizeof(KNOWN_MODULE_IDS[0]);
 
 // Timers
 unsigned long lastInterceptUpdate = 0;
@@ -37,10 +37,10 @@ unsigned long lastResetDebounceTime = 0;
 // Shared button debouncing delay
 const unsigned long debounceDelay = 50;
 
-// Helper to get device index from ID
-int getDeviceIndex(uint8_t deviceId) {
-  for (int i = 0; i < NUM_DEVICES; i++) {
-    if (KNOWN_DEVICE_IDS[i] == deviceId) {
+// Helper to get shield module index from ID
+int getShieldModuleIndex(uint8_t moduleId) {
+  for (int i = 0; i < NUM_MODULES; i++) {
+    if (KNOWN_MODULE_IDS[i] == moduleId) {
       return i;
     }
   }
@@ -57,24 +57,24 @@ void handleDateChanged(const DateMessage& msg);
 void handleScannerMessage(const ScannerMessage& msg);
 void handleScannerConnected();
 
-// Device Message Handlers
-void handleDeviceMessage(const DeviceMessage& msg);
-void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated);
-void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated);
+// Shield Module Message Handlers
+void handleShieldModuleMessage(const DeviceMessage& msg);
+void handleShieldModuleOnline(int moduleIndex, uint8_t moduleId, bool calibrated);
+void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, bool calibrated);
 
 void setupButtons();
 
 void refreshInterceptWindow();
-void initDevices();
-void updateDeviceStateOnHubDisplay();
-void updateDeviceStateOnHubLeds();
-void updateDeviceStateOnScanner(DeviceMessage msg);
+void initShieldModules();
+void updateShieldModuleStateOnHubDisplay();
+void updateShieldModuleStateOnHubLeds();
+void updateShieldModuleStateOnScanner(DeviceMessage msg);
 void checkTravelButton();
 void handleTravelButtonPress();
 void checkResetButton();
 void handleResetButtonPress();
 
-void logKnownDevices();
+void logKnownShieldModules();
 
 void updateDateStateOnHubDisplay();
 
@@ -82,7 +82,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("HUB Starting...");
 
-  logKnownDevices();
+  logKnownShieldModules();
   setupButtons();
 
   gameState.begin();
@@ -90,17 +90,17 @@ void setup() {
 
   ledHelper.begin();
 
-  displayController.begin(NUM_DEVICES);
+  displayController.begin(NUM_MODULES);
 
   espNowHelper.begin(scannerMacAddress, DEVICE_ID);
   espNowHelper.registerDateMessageHandler(handleDateChanged);
   espNowHelper.registerScannerMessageHandler(handleScannerMessage);
-  espNowHelper.registerModuleMessageHandler(handleDeviceMessage);
+  espNowHelper.registerModuleMessageHandler(handleShieldModuleMessage);
 
-  // Restore device display states from loaded data
+  // Restore states from loaded data
   updateDateStateOnHubDisplay();
-  updateDeviceStateOnHubDisplay();
-  updateDeviceStateOnHubLeds();
+  updateShieldModuleStateOnHubDisplay();
+  updateShieldModuleStateOnHubLeds();
 }
 
 void loop() {
@@ -116,11 +116,11 @@ void loop() {
   delay(10);  // Small delay to avoid busy loop
 }
 
-void logKnownDevices() {
-  Serial.print("Known Device IDs: [");
-  for (int i = 0; i < NUM_DEVICES; i++) {
-    Serial.printf("%d", KNOWN_DEVICE_IDS[i]);
-    if (i < NUM_DEVICES - 1)
+void logKnownShieldModules() {
+  Serial.print("Known Shield Module IDs: [");
+  for (int i = 0; i < NUM_MODULES; i++) {
+    Serial.printf("%d", KNOWN_MODULE_IDS[i]);
+    if (i < NUM_MODULES - 1)
       Serial.print(", ");
   }
   Serial.println("]");
@@ -254,54 +254,55 @@ void handleScannerConnected() {
   displayController.updateServiceLink(true);
 }
 
-void handleDeviceMessage(const DeviceMessage& msg) {
-  Serial.printf("Handling device message from ID: %d\n", msg.deviceId);
+void handleShieldModuleMessage(const DeviceMessage& msg) {
+  Serial.printf("Handling shield module message from ID: %d\n", msg.deviceId);
 
-  int deviceIndex = getDeviceIndex(msg.deviceId);
-  if (deviceIndex < 0) {
-    Serial.printf("Unknown device ID: %d\n", msg.deviceId);
+  int moduleIndex = getShieldModuleIndex(msg.deviceId);
+  if (moduleIndex < 0) {
+    Serial.printf("Unknown shield module ID: %d\n", msg.deviceId);
     return;
   }
 
   bool wasAvailable, wasCalibrated;
-  gameState.getDeviceState(deviceIndex, wasAvailable, wasCalibrated);
+  gameState.getDeviceState(moduleIndex, wasAvailable, wasCalibrated);
 
   // Handle different message types
   switch (msg.messageType) {
     case MSG_TYPE_CONNECT:
-      gameState.setDeviceState(deviceIndex, true, msg.isCalibrated);
-      handleDeviceOnline(deviceIndex, msg.deviceId, msg.isCalibrated);
+      gameState.setDeviceState(moduleIndex, true, msg.isCalibrated);
+      handleShieldModuleOnline(moduleIndex, msg.deviceId, msg.isCalibrated);
       break;
     case MSG_TYPE_DATA:
-      gameState.setDeviceState(deviceIndex, true, msg.isCalibrated);
+      gameState.setDeviceState(moduleIndex, true, msg.isCalibrated);
 
       // Only trigger handlers if state actually changed
       if (!wasAvailable) {
-        handleDeviceOnline(deviceIndex, msg.deviceId, msg.isCalibrated);
+        handleShieldModuleOnline(moduleIndex, msg.deviceId, msg.isCalibrated);
       } else if (wasCalibrated != msg.isCalibrated) {
-        handleDeviceCalibrationChange(deviceIndex, msg.deviceId, msg.isCalibrated);
+        handleShieldModuleCalibrationChanged(moduleIndex, msg.deviceId, msg.isCalibrated);
       }
       break;
     default:
-      Serial.println("Unknown device message type.");
+      Serial.println("Unknown shield module message type.");
   }
 
-  updateDeviceStateOnScanner(msg);
+  updateShieldModuleStateOnScanner(msg);
 }
 
-void handleDeviceOnline(int deviceIndex, uint8_t deviceId, bool calibrated) {
-  Serial.printf("Device (%d): ONLINE - Calibrated: %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
+void handleShieldModuleOnline(int moduleIndex, uint8_t moduleId, bool calibrated) {
+  Serial.printf("Shield Module (%d): ONLINE - Calibrated: %s\n", moduleId,
+                calibrated ? "TRUE" : "FALSE");
 
-  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-  updateDeviceStateOnHubDisplay();
+  ledHelper.updateStatusLEDs(moduleIndex, true, calibrated);
+  updateShieldModuleStateOnHubDisplay();
   gameState.save();
 }
 
-void handleDeviceCalibrationChange(int deviceIndex, uint8_t deviceId, bool calibrated) {
-  Serial.printf("Device (%d): Changed to %s\n", deviceId, calibrated ? "TRUE" : "FALSE");
+void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, bool calibrated) {
+  Serial.printf("Shield Module (%d): Changed to %s\n", moduleId, calibrated ? "TRUE" : "FALSE");
 
-  ledHelper.updateStatusLEDs(deviceIndex, true, calibrated);
-  updateDeviceStateOnHubDisplay();
+  ledHelper.updateStatusLEDs(moduleIndex, true, calibrated);
+  updateShieldModuleStateOnHubDisplay();
   gameState.save();
 }
 
@@ -345,20 +346,20 @@ void updateDateStateOnHubDisplay() {
   displayController.updateLastDeparture(lastMonth, lastDay, lastYear);
 }
 
-void initDevices() {
-  for (int i = 0; i < NUM_DEVICES; i++) {
+void initShieldModules() {
+  for (int i = 0; i < NUM_MODULES; i++) {
     gameState.setDeviceState(i, false, false);
     ledHelper.updateStatusLEDs(i, false, false);
   }
-  updateDeviceStateOnHubDisplay();
+  updateShieldModuleStateOnHubDisplay();
 }
 
-void updateDeviceStateOnHubDisplay() {
+void updateShieldModuleStateOnHubDisplay() {
   int onlineCount = 0;
   int calibratedCount = 0;
 
   DeviceState* deviceStates = gameState.getDeviceStates();
-  for (int i = 0; i < NUM_DEVICES; i++) {
+  for (int i = 0; i < NUM_MODULES; i++) {
     if (deviceStates[i].available) {
       onlineCount++;
       if (deviceStates[i].calibrated) {
@@ -370,15 +371,15 @@ void updateDeviceStateOnHubDisplay() {
   displayController.updateShieldModules(onlineCount, calibratedCount);
 }
 
-void updateDeviceStateOnHubLeds() {
+void updateShieldModuleStateOnHubLeds() {
   DeviceState* deviceStates = gameState.getDeviceStates();
-  for (int i = 0; i < NUM_DEVICES; i++) {
+  for (int i = 0; i < NUM_MODULES; i++) {
     ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);
   }
 }
 
-void updateDeviceStateOnScanner(DeviceMessage msg) {
-  Serial.println("Sending device state update to scanner...");
+void updateShieldModuleStateOnScanner(DeviceMessage msg) {
+  Serial.println("Sending shield module state update to scanner...");
 
   esp_now_send(scannerMacAddress, (uint8_t*)&msg, sizeof(msg));
 }

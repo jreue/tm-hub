@@ -22,8 +22,8 @@ const char* const LAST_YEAR = "last-year";
 // Time key
 const char* const TIME_REMAINING = "time-remaining";
 
-// Device keys
-const char* const DEVICE_COUNT = "device-count";
+// Shield module keys
+const char* const MODULE_COUNT = "module-count";
 }  // namespace StorageKeys
 
 // Default values
@@ -61,10 +61,10 @@ class GameState {
     int getInterceptWindowSeconds();
     void getInterceptWindowTime(int& hours, int& minutes, int& seconds);
 
-    // Device states
-    void setDeviceState(int index, bool available, bool calibrated);
-    void getDeviceState(int index, bool& available, bool& calibrated);
-    DeviceState* getDeviceStates();
+    // Shield module states
+    void setShieldModuleState(int index, bool available, bool calibrated);
+    void getShieldModuleState(int index, bool& available, bool& calibrated);
+    DeviceState* getShieldModuleStates();
 
     // Date rolling (for travel button)
     void rollDates();
@@ -86,9 +86,9 @@ class GameState {
     int interceptMinutes;
     int interceptSeconds;
 
-    // Device states (max 10 devices)
-    DeviceState deviceStates[10];
-    int numDevices;
+    // Shield module states (max 10 shield modules)
+    DeviceState shieldModuleStates[10];
+    int numShieldModules;
 
     void updateInterceptTimeComponents();
 };

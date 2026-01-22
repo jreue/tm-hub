@@ -264,16 +264,16 @@ void handleShieldModuleMessage(const DeviceMessage& msg) {
   }
 
   bool wasAvailable, wasCalibrated;
-  gameState.getDeviceState(moduleIndex, wasAvailable, wasCalibrated);
+  gameState.getShieldModuleState(moduleIndex, wasAvailable, wasCalibrated);
 
   // Handle different message types
   switch (msg.messageType) {
     case MSG_TYPE_CONNECT:
-      gameState.setDeviceState(moduleIndex, true, msg.isCalibrated);
+      gameState.setShieldModuleState(moduleIndex, true, msg.isCalibrated);
       handleShieldModuleOnline(moduleIndex, msg.deviceId, msg.isCalibrated);
       break;
     case MSG_TYPE_DATA:
-      gameState.setDeviceState(moduleIndex, true, msg.isCalibrated);
+      gameState.setShieldModuleState(moduleIndex, true, msg.isCalibrated);
 
       // Only trigger handlers if state actually changed
       if (!wasAvailable) {
@@ -348,7 +348,7 @@ void updateDateStateOnHubDisplay() {
 
 void initShieldModules() {
   for (int i = 0; i < NUM_MODULES; i++) {
-    gameState.setDeviceState(i, false, false);
+    gameState.setShieldModuleState(i, false, false);
     ledHelper.updateStatusLEDs(i, false, false);
   }
   updateShieldModuleStateOnHubDisplay();
@@ -358,7 +358,7 @@ void updateShieldModuleStateOnHubDisplay() {
   int onlineCount = 0;
   int calibratedCount = 0;
 
-  DeviceState* deviceStates = gameState.getDeviceStates();
+  DeviceState* deviceStates = gameState.getShieldModuleStates();
   for (int i = 0; i < NUM_MODULES; i++) {
     if (deviceStates[i].available) {
       onlineCount++;
@@ -372,7 +372,7 @@ void updateShieldModuleStateOnHubDisplay() {
 }
 
 void updateShieldModuleStateOnHubLeds() {
-  DeviceState* deviceStates = gameState.getDeviceStates();
+  DeviceState* deviceStates = gameState.getShieldModuleStates();
   for (int i = 0; i < NUM_MODULES; i++) {
     ledHelper.updateStatusLEDs(i, deviceStates[i].available, deviceStates[i].calibrated);
   }

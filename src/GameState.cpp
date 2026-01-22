@@ -14,12 +14,12 @@ GameState::GameState()
       interceptHours(48),
       interceptMinutes(0),
       interceptSeconds(0),
-      numDevices(0) {
-  // Initialize device states
+      numShieldModules(0) {
+  // Initialize shield module states
   for (int i = 0; i < 10; i++) {
-    deviceStates[i].available = false;
-    deviceStates[i].calibrated = false;
-    deviceStates[i].lastSeen = 0;
+    shieldModuleStates[i].available = false;
+    shieldModuleStates[i].calibrated = false;
+    shieldModuleStates[i].lastSeen = 0;
   }
 }
 
@@ -50,16 +50,16 @@ void GameState::load() {
       preferences.getInt(StorageKeys::TIME_REMAINING, Defaults::INTERCEPT_WINDOW_SECONDS);
   updateInterceptTimeComponents();
 
-  // Load number of devices
-  numDevices = preferences.getInt(StorageKeys::DEVICE_COUNT, 0);
+  // Load number of shield modules
+  numShieldModules = preferences.getInt(StorageKeys::MODULE_COUNT, 0);
 
-  // Load device states
-  for (int i = 0; i < numDevices && i < 10; i++) {
+  // Load shield module states
+  for (int i = 0; i < numShieldModules && i < 10; i++) {
     String availKey = "d" + String(i) + "-available";
     String calKey = "d" + String(i) + "-calibrated";
-    deviceStates[i].available = preferences.getBool(availKey.c_str(), false);
-    deviceStates[i].calibrated = preferences.getBool(calKey.c_str(), false);
-    deviceStates[i].lastSeen = 0;  // Reset lastSeen on boot
+    shieldModuleStates[i].available = preferences.getBool(availKey.c_str(), false);
+    shieldModuleStates[i].calibrated = preferences.getBool(calKey.c_str(), false);
+    shieldModuleStates[i].lastSeen = 0;  // Reset lastSeen on boot
   }
 
   preferences.end();
@@ -71,11 +71,11 @@ void GameState::load() {
   Serial.printf("  Intercept Window: %d seconds (%02d:%02d:%02d)\n", interceptWindowSeconds,
                 interceptHours, interceptMinutes, interceptSeconds);
 
-  // Display loaded device states
-  for (int i = 0; i < numDevices; i++) {
-    Serial.printf("  Device %d: Available=%s, Calibrated=%s\n", i,
-                  deviceStates[i].available ? "true" : "false",
-                  deviceStates[i].calibrated ? "true" : "false");
+  // Display loaded shield module states
+  for (int i = 0; i < numShieldModules; i++) {
+    Serial.printf("  Shield Module %d: Available=%s, Calibrated=%s\n", i,
+                  shieldModuleStates[i].available ? "true" : "false",
+                  shieldModuleStates[i].calibrated ? "true" : "false");
   }
 }
 
@@ -100,15 +100,15 @@ void GameState::save() {
   // Save intercept window
   preferences.putInt(StorageKeys::TIME_REMAINING, interceptWindowSeconds);
 
-  // Save number of devices
-  preferences.putInt(StorageKeys::DEVICE_COUNT, numDevices);
+  // Save number of shield modules
+  preferences.putInt(StorageKeys::MODULE_COUNT, numShieldModules);
 
-  // Save device states
-  for (int i = 0; i < numDevices; i++) {
+  // Save shield module states
+  for (int i = 0; i < numShieldModules; i++) {
     String availKey = "d" + String(i) + "-available";
     String calKey = "d" + String(i) + "-calibrated";
-    preferences.putBool(availKey.c_str(), deviceStates[i].available);
-    preferences.putBool(calKey.c_str(), deviceStates[i].calibrated);
+    preferences.putBool(availKey.c_str(), shieldModuleStates[i].available);
+    preferences.putBool(calKey.c_str(), shieldModuleStates[i].calibrated);
   }
 
   preferences.end();
@@ -173,33 +173,33 @@ void GameState::getInterceptWindowTime(int& hours, int& minutes, int& seconds) {
   seconds = interceptSeconds;
 }
 
-void GameState::setDeviceState(int index, bool available, bool calibrated) {
+void GameState::setShieldModuleState(int index, bool available, bool calibrated) {
   if (index < 0 || index >= 10)
     return;
 
-  deviceStates[index].available = available;
-  deviceStates[index].calibrated = calibrated;
-  deviceStates[index].lastSeen = millis();
+  shieldModuleStates[index].available = available;
+  shieldModuleStates[index].calibrated = calibrated;
+  shieldModuleStates[index].lastSeen = millis();
 
-  // Update numDevices if needed
-  if (index >= numDevices) {
-    numDevices = index + 1;
+  // Update numShieldModules if needed
+  if (index >= numShieldModules) {
+    numShieldModules = index + 1;
   }
 }
 
-void GameState::getDeviceState(int index, bool& available, bool& calibrated) {
+void GameState::getShieldModuleState(int index, bool& available, bool& calibrated) {
   if (index < 0 || index >= 10) {
     available = false;
     calibrated = false;
     return;
   }
 
-  available = deviceStates[index].available;
-  calibrated = deviceStates[index].calibrated;
+  available = shieldModuleStates[index].available;
+  calibrated = shieldModuleStates[index].calibrated;
 }
 
-DeviceState* GameState::getDeviceStates() {
-  return deviceStates;
+DeviceState* GameState::getShieldModuleStates() {
+  return shieldModuleStates;
 }
 
 void GameState::rollDates() {

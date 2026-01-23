@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <EspNowHelper.h>
 #include <MessageStructs.h>
+#include <shared_hardware_config.h>
 
 #include "DisplayController.h"
 #include "GameEngine.h"

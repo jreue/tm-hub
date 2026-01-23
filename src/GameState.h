@@ -69,6 +69,9 @@ class GameState {
     // Date rolling (for travel button)
     void rollDates();
 
+    // Target date validation
+    bool isValidTargetDate();
+
   private:
     Preferences preferences;
 

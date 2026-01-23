@@ -309,6 +309,12 @@ void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, boo
 void handleTravelButtonPress() {
   Serial.println(">>> Travel button pressed! <<<");
 
+  // Check if target date is valid (not --/--/----)
+  if (!gameState.isValidTargetDate()) {
+    Serial.println("Cannot travel: No valid target date set.");
+    return;
+  }
+
   // Roll the dates
   gameState.rollDates();
 

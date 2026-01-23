@@ -223,3 +223,7 @@ void GameState::updateInterceptTimeComponents() {
   interceptMinutes = (interceptWindowSeconds % 3600) / 60;
   interceptSeconds = interceptWindowSeconds % 60;
 }
+
+bool GameState::isValidTargetDate() {
+  return (targetMonth != 0 && targetDay != 0 && targetYear != 0);
+}

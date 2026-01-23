@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Button.h>
 #include <EspNowHelper.h>
 #include <MessageStructs.h>
 #include <shared_hardware_config.h>
@@ -24,19 +25,6 @@ unsigned long lastInterceptUpdate = 0;
 // ESP-NOW message flags (volatile because accessed in ISR)
 volatile bool dateMessagePending = false;
 DateMessage pendingDateMessage;
-
-// Travel button debouncing
-int lastTravelButtonState = HIGH;
-int travelButtonState = HIGH;
-unsigned long lastTravelDebounceTime = 0;
-
-// Reset button debouncing
-int lastResetButtonState = HIGH;
-int resetButtonState = HIGH;
-unsigned long lastResetDebounceTime = 0;
-
-// Shared button debouncing delay
-const unsigned long debounceDelay = 50;
 
 // Helper to get shield module index from ID
 int getShieldModuleIndex(uint8_t moduleId) {
@@ -70,10 +58,10 @@ void initShieldModules();
 void updateShieldModuleStateOnHubDisplay();
 void updateShieldModuleStateOnHubLeds();
 void updateShieldModuleStateOnScanner(ShieldModuleMessage msg);
-void checkTravelButton();
-void handleTravelButtonPress();
-void checkResetButton();
-void handleResetButtonPress();
+
+// Button Callbacks
+void handleTravelButtonPress(void* button_handle, void* usr_data);
+void handleResetButtonPress(void* button_handle, void* usr_data);
 
 void logKnownShieldModules();
 
@@ -107,9 +95,6 @@ void setup() {
 void loop() {
   processPendingDateMessage();
 
-  checkTravelButton();
-  checkResetButton();
-
   ledHelper.animate();
 
   refreshInterceptWindow();
@@ -128,11 +113,11 @@ void logKnownShieldModules() {
 }
 
 void setupButtons() {
-  Serial.printf("Travel Button PIN: %d\n", TRAVEL_BUTTON_PIN);
-  pinMode(TRAVEL_BUTTON_PIN, INPUT_PULLUP);
+  Button* travelButton = new Button(TRAVEL_BUTTON_PIN, false);
+  travelButton->attachSingleClickEventCb(&handleTravelButtonPress, NULL);
 
-  Serial.printf("Reset Button PIN: %d\n", RESET_BUTTON_PIN);
-  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
+  Button* resetButton = new Button(RESET_BUTTON_PIN, false);
+  resetButton->attachSingleClickEventCb(&handleResetButtonPress, NULL);
 }
 
 void refreshInterceptWindow() {
@@ -183,48 +168,6 @@ void processPendingDateMessage() {
     displayController.updateTargetDate(pendingDateMessage.month, pendingDateMessage.day,
                                        pendingDateMessage.year);
   }
-}
-
-void checkTravelButton() {
-  // Simple button debouncing
-  int reading = digitalRead(TRAVEL_BUTTON_PIN);
-
-  if (reading != lastTravelButtonState) {
-    lastTravelDebounceTime = millis();
-  }
-
-  if ((millis() - lastTravelDebounceTime) > debounceDelay) {
-    if (reading != travelButtonState) {
-      travelButtonState = reading;
-
-      if (travelButtonState == LOW) {
-        handleTravelButtonPress();
-      }
-    }
-  }
-
-  lastTravelButtonState = reading;
-}
-
-void checkResetButton() {
-  // Simple button debouncing
-  int reading = digitalRead(RESET_BUTTON_PIN);
-
-  if (reading != lastResetButtonState) {
-    lastResetDebounceTime = millis();
-  }
-
-  if ((millis() - lastResetDebounceTime) > debounceDelay) {
-    if (reading != resetButtonState) {
-      resetButtonState = reading;
-
-      if (resetButtonState == LOW) {
-        handleResetButtonPress();
-      }
-    }
-  }
-
-  lastResetButtonState = reading;
 }
 
 void handleDateChanged(const DateMessage& msg) {
@@ -307,7 +250,7 @@ void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, boo
   gameState.save();
 }
 
-void handleTravelButtonPress() {
+void handleTravelButtonPress(void* button_handle, void* usr_data) {
   Serial.println(">>> Travel button pressed! <<<");
 
   // Check if target date is valid (not --/--/----)
@@ -334,7 +277,7 @@ void handleTravelButtonPress() {
   gameState.save();
 }
 
-void handleResetButtonPress() {
+void handleResetButtonPress(void* button_handle, void* usr_data) {
   Serial.println(">>> Reset button pressed! Clearing NVS... <<<");
   gameState.reset();
   Serial.println("NVS cleared. Restarting...");

@@ -19,8 +19,10 @@ const char* const LAST_MONTH = "last-month";
 const char* const LAST_DAY = "last-day";
 const char* const LAST_YEAR = "last-year";
 
-// Time key
-const char* const TIME_REMAINING = "time-remaining";
+// Intercept window keys
+const char* const INTERCEPT_HOURS = "timer-hours";
+const char* const INTERCEPT_MINUTES = "timer-minutes";
+const char* const INTERCEPT_SECONDS = "timer-seconds";
 
 // Shield module keys
 const char* const MODULE_COUNT = "module-count";
@@ -37,7 +39,9 @@ const uint16_t CURRENT_YEAR = 2056;
 const uint8_t LAST_MONTH = 12;
 const uint8_t LAST_DAY = 25;
 const uint16_t LAST_YEAR = 2025;
-const int INTERCEPT_WINDOW_SECONDS = 48 * 60 * 60;
+const int INTERCEPT_HOURS = 48;
+const int INTERCEPT_MINUTES = 0;
+const int INTERCEPT_SECONDS = 0;
 }  // namespace Defaults
 
 class GameState {
@@ -57,9 +61,9 @@ class GameState {
     void getLastDate(uint8_t& month, uint8_t& day, uint16_t& year);
 
     // Intercept window
-    void setInterceptWindowSeconds(int seconds);
-    int getInterceptWindowSeconds();
+    void setInterceptWindowTime(int hours, int minutes, int seconds);
     void getInterceptWindowTime(int& hours, int& minutes, int& seconds);
+    void tickCountdown();
 
     // Shield module states
     void setShieldModuleState(int index, bool available, bool calibrated);
@@ -84,7 +88,6 @@ class GameState {
     uint16_t lastYear;
 
     // Intercept window
-    int interceptWindowSeconds;
     int interceptHours;
     int interceptMinutes;
     int interceptSeconds;
@@ -92,6 +95,4 @@ class GameState {
     // Shield module states (max 10 shield modules)
     ModuleState shieldModuleStates[10];
     int numShieldModules;
-
-    void updateInterceptTimeComponents();
 };

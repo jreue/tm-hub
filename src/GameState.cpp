@@ -10,10 +10,9 @@ GameState::GameState()
       lastMonth(Defaults::LAST_MONTH),
       lastDay(Defaults::LAST_DAY),
       lastYear(Defaults::LAST_YEAR),
-      interceptWindowSeconds(Defaults::INTERCEPT_WINDOW_SECONDS),
-      interceptHours(48),
-      interceptMinutes(0),
-      interceptSeconds(0),
+      interceptHours(Defaults::INTERCEPT_HOURS),
+      interceptMinutes(Defaults::INTERCEPT_MINUTES),
+      interceptSeconds(Defaults::INTERCEPT_SECONDS),
       numShieldModules(0) {
   // Initialize shield module states
   for (int i = 0; i < 10; i++) {
@@ -45,9 +44,11 @@ void GameState::load() {
   lastYear = preferences.getUShort(StorageKeys::LAST_YEAR, Defaults::LAST_YEAR);
 
   // Load intercept window
-  interceptWindowSeconds =
-      preferences.getInt(StorageKeys::TIME_REMAINING, Defaults::INTERCEPT_WINDOW_SECONDS);
-  updateInterceptTimeComponents();
+  interceptHours = preferences.getInt(StorageKeys::INTERCEPT_HOURS, Defaults::INTERCEPT_HOURS);
+  interceptMinutes =
+      preferences.getInt(StorageKeys::INTERCEPT_MINUTES, Defaults::INTERCEPT_MINUTES);
+  interceptSeconds =
+      preferences.getInt(StorageKeys::INTERCEPT_SECONDS, Defaults::INTERCEPT_SECONDS);
 
   // Load number of shield modules
   numShieldModules = preferences.getInt(StorageKeys::MODULE_COUNT, 0);
@@ -66,8 +67,8 @@ void GameState::load() {
   Serial.printf("  Target: %d/%d/%d\n", targetMonth, targetDay, targetYear);
   Serial.printf("  Current: %d/%d/%d\n", currentMonth, currentDay, currentYear);
   Serial.printf("  Last: %d/%d/%d\n", lastMonth, lastDay, lastYear);
-  Serial.printf("  Intercept Window: %d seconds (%02d:%02d:%02d)\n", interceptWindowSeconds,
-                interceptHours, interceptMinutes, interceptSeconds);
+  Serial.printf("  Intercept Window: %02d:%02d:%02d\n", interceptHours, interceptMinutes,
+                interceptSeconds);
 
   // Display loaded shield module states
   for (int i = 0; i < numShieldModules; i++) {
@@ -96,7 +97,9 @@ void GameState::save() {
   preferences.putUShort(StorageKeys::LAST_YEAR, lastYear);
 
   // Save intercept window
-  preferences.putInt(StorageKeys::TIME_REMAINING, interceptWindowSeconds);
+  preferences.putInt(StorageKeys::INTERCEPT_HOURS, interceptHours);
+  preferences.putInt(StorageKeys::INTERCEPT_MINUTES, interceptMinutes);
+  preferences.putInt(StorageKeys::INTERCEPT_SECONDS, interceptSeconds);
 
   // Save number of shield modules
   preferences.putInt(StorageKeys::MODULE_COUNT, numShieldModules);
@@ -156,19 +159,37 @@ void GameState::getLastDate(uint8_t& month, uint8_t& day, uint16_t& year) {
   year = lastYear;
 }
 
-void GameState::setInterceptWindowSeconds(int seconds) {
-  interceptWindowSeconds = seconds;
-  updateInterceptTimeComponents();
-}
-
-int GameState::getInterceptWindowSeconds() {
-  return interceptWindowSeconds;
-}
-
 void GameState::getInterceptWindowTime(int& hours, int& minutes, int& seconds) {
   hours = interceptHours;
   minutes = interceptMinutes;
   seconds = interceptSeconds;
+}
+
+void GameState::setInterceptWindowTime(int hours, int minutes, int seconds) {
+  interceptHours = hours;
+  interceptMinutes = minutes;
+  interceptSeconds = seconds;
+}
+
+void GameState::tickCountdown() {
+  if (interceptHours == 0 && interceptMinutes == 0 && interceptSeconds == 0) {
+    return;  // Already at 0
+  }
+
+  interceptSeconds--;
+  if (interceptSeconds < 0) {
+    interceptSeconds = 59;
+    interceptMinutes--;
+    if (interceptMinutes < 0) {
+      interceptMinutes = 59;
+      interceptHours--;
+      if (interceptHours < 0) {
+        interceptHours = 0;
+        interceptMinutes = 0;
+        interceptSeconds = 0;
+      }
+    }
+  }
 }
 
 void GameState::setShieldModuleState(int index, bool available, bool calibrated) {
@@ -216,12 +237,6 @@ void GameState::rollDates() {
   Serial.printf(
       "Dates rolled - Last: %02d/%02d/%04d, Current: %02d/%02d/%04d, Target: --/--/----\n",
       lastMonth, lastDay, lastYear, currentMonth, currentDay, currentYear);
-}
-
-void GameState::updateInterceptTimeComponents() {
-  interceptHours = interceptWindowSeconds / 3600;
-  interceptMinutes = (interceptWindowSeconds % 3600) / 60;
-  interceptSeconds = interceptWindowSeconds % 60;
 }
 
 bool GameState::isValidTargetDate() {

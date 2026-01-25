@@ -19,12 +19,12 @@ GameEngine gameEngine;
 const uint8_t KNOWN_MODULE_IDS[] = {MODULE_1_ID, MODULE_2_ID, MODULE_3_ID};
 const int NUM_MODULES = sizeof(KNOWN_MODULE_IDS) / sizeof(KNOWN_MODULE_IDS[0]);
 
-// Timers
-unsigned long lastInterceptUpdate = 0;
-
 // ESP-NOW message flags (volatile because accessed in ISR)
 volatile bool dateMessagePending = false;
 DateMessage pendingDateMessage;
+
+// Timer interrupt flag
+volatile bool interceptTickFlag = false;
 
 // Helper to get shield module index from ID
 int getShieldModuleIndex(uint8_t moduleId) {
@@ -37,6 +37,9 @@ int getShieldModuleIndex(uint8_t moduleId) {
 }
 
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
+
+// Timer Interrupt Handler
+void IRAM_ATTR handleTimerInterrupt();
 
 // Date Message Handlers
 void processPendingDateMessage();
@@ -53,8 +56,7 @@ void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, boo
 
 void setupButtons();
 
-void refreshInterceptWindow();
-void initShieldModules();
+void updateDateStateOnHubDisplay();
 void updateShieldModuleStateOnHubDisplay();
 void updateShieldModuleStateOnHubLeds();
 void updateShieldModuleStateOnScanner(ShieldModuleMessage msg);
@@ -67,9 +69,18 @@ void logKnownShieldModules();
 
 void updateDateStateOnHubDisplay();
 
+void handleInterceptTick();
+
+hw_timer_t* timer = NULL;
+
 void setup() {
   Serial.begin(115200);
   Serial.println("HUB Starting...");
+
+  timer = timerBegin(0, 80, true);  // Timer 0, prescaler 80 (1us per tick)
+  timerAttachInterrupt(timer, &handleTimerInterrupt, true);
+  timerAlarmWrite(timer, 1000000, true);  // 1 second alarm
+  timerAlarmEnable(timer);
 
   logKnownShieldModules();
   setupButtons();
@@ -97,7 +108,7 @@ void loop() {
 
   ledHelper.animate();
 
-  refreshInterceptWindow();
+  handleInterceptTick();
 
   delay(10);  // Small delay to avoid busy loop
 }
@@ -120,42 +131,8 @@ void setupButtons() {
   resetButton->attachSingleClickEventCb(&handleResetButtonPress, NULL);
 }
 
-void refreshInterceptWindow() {
-  unsigned long currentMillis = millis();
-
-  // Update intercept window countdown every second
-  if (currentMillis - lastInterceptUpdate >= 1000) {
-    lastInterceptUpdate = currentMillis;
-
-    int interceptWindowSeconds = gameState.getInterceptWindowSeconds();
-    if (interceptWindowSeconds > 0) {
-      interceptWindowSeconds--;
-      gameState.setInterceptWindowSeconds(interceptWindowSeconds);
-
-      // Get time components for display
-      int hours, minutes, seconds;
-      gameState.getInterceptWindowTime(hours, minutes, seconds);
-
-      // Track changes for display optimization (using static variables)
-      static int lastHours = -1;
-      static int lastMinutes = -1;
-
-      bool hoursChanged = (hours != lastHours);
-      bool minutesChanged = (minutes != lastMinutes);
-
-      lastHours = hours;
-      lastMinutes = minutes;
-
-      // Update display
-      displayController.updateInterceptWindow(hours, minutes, seconds, hoursChanged,
-                                              minutesChanged);
-
-      // Save to NVS when minutes change to reduce flash wear
-      if (minutesChanged) {
-        gameState.save();
-      }
-    }
-  }
+void IRAM_ATTR handleTimerInterrupt() {
+  interceptTickFlag = true;
 }
 
 void processPendingDateMessage() {
@@ -196,6 +173,40 @@ void handleScannerMessage(const ScannerMessage& msg) {
 void handleScannerConnected() {
   Serial.println("Scanner has connected!");
   displayController.updateServiceLink(true);
+}
+
+void handleInterceptTick() {
+  if (interceptTickFlag) {
+    interceptTickFlag = false;
+
+    gameState.tickCountdown();
+
+    int hours, minutes, seconds;
+    gameState.getInterceptWindowTime(hours, minutes, seconds);
+
+    if (hours == 0 && minutes == 0 && seconds == 0) {
+      return;
+    }
+
+    // Track changes for display optimization
+    // Static variables: persist across calls but scoped only to this function
+    static int lastHours = -1;
+    static int lastMinutes = -1;
+
+    bool hoursChanged = (hours != lastHours);
+    bool minutesChanged = (minutes != lastMinutes);
+
+    lastHours = hours;
+    lastMinutes = minutes;
+
+    // Update display
+    displayController.updateInterceptWindow(hours, minutes, seconds, hoursChanged, minutesChanged);
+
+    // Save when minutes change
+    if (minutesChanged) {
+      gameState.save();
+    }
+  }
 }
 
 void handleShieldModuleMessage(const ShieldModuleMessage& msg) {

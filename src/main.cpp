@@ -92,7 +92,8 @@ void setup() {
 
   displayController.begin(NUM_MODULES);
 
-  espNowHelper.begin(scannerMacAddress, DEVICE_ID);
+  espNowHelper.begin(DEVICE_ID);
+  espNowHelper.addPeer(scannerMacAddress);
   espNowHelper.registerDateMessageHandler(handleDateChanged);
   espNowHelper.registerScannerMessageHandler(handleScannerMessage);
   espNowHelper.registerModuleMessageHandler(handleShieldModuleMessage);

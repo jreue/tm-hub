@@ -33,12 +33,12 @@ namespace Defaults {
 const uint8_t TARGET_MONTH = 0;
 const uint8_t TARGET_DAY = 0;
 const uint16_t TARGET_YEAR = 0;
-const uint8_t CURRENT_MONTH = 1;
-const uint8_t CURRENT_DAY = 1;
+const uint8_t CURRENT_MONTH = 06;
+const uint8_t CURRENT_DAY = 26;
 const uint16_t CURRENT_YEAR = 2056;
-const uint8_t LAST_MONTH = 12;
-const uint8_t LAST_DAY = 25;
-const uint16_t LAST_YEAR = 2025;
+const uint8_t LAST_MONTH = 06;
+const uint8_t LAST_DAY = 26;
+const uint16_t LAST_YEAR = 2026;
 const int INTERCEPT_HOURS = 48;
 const int INTERCEPT_MINUTES = 0;
 const int INTERCEPT_SECONDS = 0;

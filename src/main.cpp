@@ -37,6 +37,7 @@ int getShieldModuleIndex(uint8_t moduleId) {
 }
 
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
+uint8_t dateMacAddress[] = DATE_MAC_ADDRESS;
 
 // Timer Interrupt Handler
 void IRAM_ATTR handleTimerInterrupt();
@@ -94,6 +95,7 @@ void setup() {
 
   espNowHelper.begin(DEVICE_ID);
   espNowHelper.addPeer(scannerMacAddress);
+  espNowHelper.addPeer(dateMacAddress);
   espNowHelper.registerDateMessageHandler(handleDateChanged);
   espNowHelper.registerScannerMessageHandler(handleScannerMessage);
   espNowHelper.registerModuleMessageHandler(handleShieldModuleMessage);
@@ -287,6 +289,9 @@ void handleTravelButtonPress(void* button_handle, void* usr_data) {
   displayController.updateTargetDate(targetMonth, targetDay, targetYear);
 
   gameState.save();
+
+  // clear target date after travel
+  espNowHelper.sendDateUpdated(dateMacAddress, targetMonth, targetDay, targetYear);
 }
 
 void handleResetButtonPress(void* button_handle, void* usr_data) {

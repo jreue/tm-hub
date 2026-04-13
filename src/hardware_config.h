@@ -11,7 +11,7 @@
 #define MODULE_3_ID 103
 
 // LED Status Display
-#define LED_DATA_PIN 23
+#define LED_DATA_PIN 25
 #define NUM_LEDS 48
 #define MATRIX_COLS 4
 #define MATRIX_ROWS 12

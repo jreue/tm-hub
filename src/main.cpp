@@ -101,6 +101,7 @@ void setup() {
   espNowHelper.begin(DEVICE_ID);
   espNowHelper.addPeer(scannerMacAddress);
   espNowHelper.addPeer(dateMacAddress);
+  espNowHelper.addPeer(effectsMacAddress);
   espNowHelper.registerDateMessageHandler(handleDateChanged);
   espNowHelper.registerScannerMessageHandler(handleScannerMessage);
   espNowHelper.registerModuleMessageHandler(handleShieldModuleMessage);

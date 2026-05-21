@@ -38,6 +38,7 @@ int getShieldModuleIndex(uint8_t moduleId) {
 
 uint8_t scannerMacAddress[] = SCANNER_MAC_ADDRESS;
 uint8_t dateMacAddress[] = DATE_MAC_ADDRESS;
+uint8_t effectsMacAddress[] = EFFECTS_MAC_ADDRESS;
 
 // Timer Interrupt Handler
 void IRAM_ATTR handleTimerInterrupt();
@@ -71,6 +72,10 @@ void logKnownShieldModules();
 void updateDateStateOnHubDisplay();
 
 void handleInterceptTick();
+
+void forwardScannerConnectedToEffects();
+void forwardShieldModuleStateToEffects(ShieldModuleMessage msg);
+void forwardTravelEventToEffects(uint8_t month, uint8_t day, uint16_t year);
 
 hw_timer_t* timer = NULL;
 
@@ -176,6 +181,8 @@ void handleScannerMessage(const ScannerMessage& msg) {
 void handleScannerConnected() {
   Serial.println("Scanner has connected!");
   displayController.updateServiceLink(true);
+
+  forwardScannerConnectedToEffects();
 }
 
 void handleInterceptTick() {
@@ -245,6 +252,7 @@ void handleShieldModuleMessage(const ShieldModuleMessage& msg) {
   }
 
   updateShieldModuleStateOnScanner(msg);
+  forwardShieldModuleStateToEffects(msg);
 }
 
 void handleShieldModuleOnline(int moduleIndex, uint8_t moduleId, bool calibrated) {
@@ -292,6 +300,8 @@ void handleTravelButtonPress(void* button_handle, void* usr_data) {
 
   // clear target date after travel
   espNowHelper.sendDateUpdated(dateMacAddress, targetMonth, targetDay, targetYear);
+
+  forwardTravelEventToEffects(targetMonth, targetDay, targetYear);
 }
 
 void handleResetButtonPress(void* button_handle, void* usr_data) {
@@ -349,4 +359,32 @@ void updateShieldModuleStateOnScanner(ShieldModuleMessage msg) {
   Serial.println("Sending shield module state update to scanner...");
 
   esp_now_send(scannerMacAddress, (uint8_t*)&msg, sizeof(msg));
+}
+
+void forwardScannerConnectedToEffects() {
+  Serial.println("Forwarding scanner connected event to effects...");
+
+  espNowHelper.sendScannerConnected(effectsMacAddress);
+}
+
+void forwardShieldModuleStateToEffects(ShieldModuleMessage msg) {
+  Serial.println("Forwarding shield module state update to effects...");
+
+  switch (msg.messageType) {
+    case MSG_TYPE_CONNECT:
+      espNowHelper.sendModuleConnected(effectsMacAddress);
+      break;
+    case MSG_TYPE_DATA:
+      espNowHelper.sendModuleUpdated(effectsMacAddress, msg.isCalibrated);
+      break;
+    default:
+      Serial.println("Unknown shield module message type for forwarding.");
+      return;
+  }
+}
+
+void forwardTravelEventToEffects(uint8_t month, uint8_t day, uint16_t year) {
+  Serial.println("Forwarding travel event to effects...");
+
+  espNowHelper.sendDateUpdated(effectsMacAddress, month, day, year);
 }

@@ -9,6 +9,9 @@
 #define MODULE_1_ID 101
 #define MODULE_2_ID 102
 #define MODULE_3_ID 103
+#define MODULE_4_ID 104
+#define MODULE_5_ID 105
+#define MODULE_6_ID 106
 
 // LED Status Display
 #define LED_DATA_PIN 25

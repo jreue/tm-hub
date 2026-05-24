@@ -16,7 +16,8 @@ DisplayController displayController;
 GameState gameState;
 GameEngine gameEngine;
 
-const uint8_t KNOWN_MODULE_IDS[] = {MODULE_1_ID, MODULE_2_ID, MODULE_3_ID};
+const uint8_t KNOWN_MODULE_IDS[] = {MODULE_1_ID, MODULE_2_ID, MODULE_3_ID,
+                                    MODULE_4_ID, MODULE_5_ID, MODULE_6_ID};
 const int NUM_MODULES = sizeof(KNOWN_MODULE_IDS) / sizeof(KNOWN_MODULE_IDS[0]);
 
 // ESP-NOW message flags (volatile because accessed in ISR)
@@ -55,6 +56,8 @@ void handleScannerConnected();
 void handleShieldModuleMessage(const ShieldModuleMessage& msg);
 void handleShieldModuleOnline(int moduleIndex, uint8_t moduleId, bool calibrated);
 void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, bool calibrated);
+
+void handleDevice858Message(const Device858Message& msg);
 
 void setupButtons();
 
@@ -105,6 +108,7 @@ void setup() {
   espNowHelper.registerDateMessageHandler(handleDateChanged);
   espNowHelper.registerScannerMessageHandler(handleScannerMessage);
   espNowHelper.registerModuleMessageHandler(handleShieldModuleMessage);
+  espNowHelper.registerDevice858MessageHandler(handleDevice858Message);
 
   // Restore states from loaded data
   updateDateStateOnHubDisplay();
@@ -271,6 +275,32 @@ void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, boo
   ledHelper.updateStatusLEDs(moduleIndex, true, calibrated);
   updateShieldModuleStateOnHubDisplay();
   gameState.save();
+}
+
+void handleDevice858Message(const Device858Message& msg) {
+  Serial.printf("Handling 858 message from ID: %d\n", msg.deviceId);
+
+  switch (msg.messageType) {
+    case MSG_TYPE_CONNECT:
+      Serial.println("858 device connected.");  // not sent by 858 yet, but handle just in case
+      break;
+    case MSG_TYPE_DATA:
+      Serial.println("Received data message from 858 device. Nothing to do yet.");
+
+      if (msg.doTravelOverride) {
+        Serial.println("Travel override flag is set in 858 message. Triggering travel event...");
+
+        handleTravelButtonPress(nullptr, nullptr);
+      } else if (msg.doResetOverride) {
+        Serial.println("Reset override flag is set in 858 message. No reset behavior defined yet.");
+      } else if (msg.doStartupOverride) {
+        Serial.println(
+            "Startup override flag is set in 858 message. No startup behavior defined yet.");
+      }
+      break;
+    default:
+      Serial.println("Unknown 858 message type.");
+  }
 }
 
 void handleTravelButtonPress(void* button_handle, void* usr_data) {

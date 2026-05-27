@@ -34,13 +34,11 @@ void DisplayController::enableBacklight() {
 }
 
 void DisplayController::renderLabel(const String& text, int y) {
-  tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(text, LABEL_LEFT_X, y);
 }
 
 void DisplayController::renderShieldLabel(const String& text, int y) {
-  tft.setTextColor(COLOR_NEON_GREEN);
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.drawString(text, SHIELDING_LEFT_X, y);
 }
@@ -63,49 +61,54 @@ void DisplayController::renderShieldValue(const String& text, int y, uint16_t co
 
 void DisplayController::renderChrome() {
   // Header Text
-  tft.setTextColor(COLOR_NEON_GREEN);
+  tft.setTextColor(HEADER_TEXT_COLOR);
   tft.setTextSize(1);
   tft.setFreeFont(&FreeSansBold9pt7b);
   tft.setTextDatum(TC_DATUM);
-  tft.drawString("TIME DISPLACEMENT CONSOLE", 160, 7);
+  tft.drawString("TIME DISPLACEMENT MONITOR", 160, 7);
   tft.setTextDatum(TL_DATUM);
   // Header Line
-  tft.drawLine(10, 30, 310, 30, COLOR_NEON_GREEN);
+  tft.drawLine(10, 30, 310, 30, CHROME_COLOR);
   // Bottom Line
-  tft.drawLine(10, 410, 310, 410, COLOR_NEON_GREEN);
+  tft.drawLine(10, 410, 310, 410, CHROME_COLOR);
 }
 
 void DisplayController::renderDateLabels() {
+  tft.setTextColor(DATE_LABEL_COLOR);
+
   renderLabel("Target Date", TARGET_DATE_Y);
   renderLabel("Current Date", CURRENT_DATE_Y);
   renderLabel("Last Departure", LAST_DEPARTURE_Y);
 }
 
 void DisplayController::renderInterceptLabels() {
-  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
+  tft.setTextColor(INTERCEPT_LABEL_COLOR);
+
   tft.setFreeFont(&FreeMonoBold9pt7b);
   tft.setTextDatum(TC_DATUM);
   tft.drawString("<<< INTERCEPT WINDOW >>>", 160, 336);
   tft.setTextDatum(TL_DATUM);
 
-  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
+  tft.setTextColor(INTERCEPT_VALUE_COLOR);
   tft.setFreeFont(&FreeMonoBold24pt7b);
   tft.drawString(":", 104, 352);
   tft.drawString(":", 188, 352);
 }
 
 void DisplayController::renderSystemLabels() {
+  tft.setTextColor(SYSTEM_LABEL_COLOR);
+
   renderLabel("Core Power", CORE_POWER_Y);
   renderLabel("Service Link", SERVICE_LINK_Y);
 }
 
 void DisplayController::renderShieldChrome() {
   // Outer border
-  tft.drawRoundRect(10, 150, 300, 175, 5, COLOR_NEON_GREEN);
+  tft.drawRoundRect(10, 150, 300, 175, 5, SHIELDING_CHROME_COLOR);
 
   // Title background
-  tft.fillRoundRect(83, 138, 154, 24, 7, COLOR_DARK_GREEN);
-  tft.fillRoundRect(85, 140, 150, 20, 6, COLOR_NEON_GREEN);
+  tft.fillRoundRect(83, 138, 154, 24, 7, SHIELDING_HEADER_OUTER_COLOR);
+  tft.fillRoundRect(85, 140, 150, 20, 6, SHIELDING_HEADER_INNER_COLOR);
 
   tft.setTextColor(TFT_BLACK);
   tft.setFreeFont(&FreeMonoBold9pt7b);
@@ -115,6 +118,8 @@ void DisplayController::renderShieldChrome() {
 }
 
 void DisplayController::renderShieldLabels() {
+  tft.setTextColor(SHIELDING_LABEL_COLOR);
+
   renderShieldLabel("Modules", SHIELDING_MODULES_Y);
   renderShieldLabel("Calibrated", SHIELDING_CALIBRATION_Y);
   renderShieldLabel("Power", SHIELDING_POWER_Y);
@@ -177,7 +182,8 @@ void DisplayController::renderModuleConnectionProgress(int count) {
   const int height = 20;
 
   for (int i = 0; i < 8; i++) {
-    uint16_t color = (i < count) ? COLOR_PROGRESS_FILLED : COLOR_PROGRESS_EMPTY;
+    uint16_t color = (i < count) ? SHIELDING_CONNECTION_PROGRESS_FILLED_COLOR
+                                 : SHIELDING_CONNECTION_PROGRESS_EMPTY_COLOR;
     tft.fillRect(xPositions[i], y, width, height, color);
   }
 }
@@ -189,7 +195,8 @@ void DisplayController::renderModuleCalibrationProgress(int count) {
   const int height = 20;
 
   for (int i = 0; i < 8; i++) {
-    uint16_t color = (i < count) ? COLOR_PROGRESS_FILLED : COLOR_PROGRESS_EMPTY;
+    uint16_t color = (i < count) ? SHIELDING_CALIBRATION_PROGRESS_FILLED_COLOR
+                                 : SHIELDING_CALIBRATION_PROGRESS_EMPTY_COLOR;
     tft.fillRect(xPositions[i], y, width, height, color);
   }
 }
@@ -242,7 +249,7 @@ void DisplayController::updateDetectionRisk(float percentage) {
 
 void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds,
                                               bool hoursChanged, bool minutesChanged) {
-  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
+  tft.setTextColor(INTERCEPT_VALUE_COLOR);
   tft.setFreeFont(&FreeMonoBold24pt7b);
 
   // Only update the parts that changed to avoid flicker

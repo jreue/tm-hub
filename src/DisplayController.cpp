@@ -172,16 +172,16 @@ void DisplayController::updateLastDeparture(uint8_t month, uint8_t day, uint16_t
 void DisplayController::updateShieldModules(int online, int calibrated) {
   renderModuleConnectionProgress(online);
   renderModuleCalibrationProgress(calibrated);
-  updateShieldPower(calibrated, 8);
+  updateShieldPower(calibrated, totalDevices);
 }
 
 void DisplayController::renderModuleConnectionProgress(int count) {
-  const int xPositions[] = {187, 201, 215, 229, 243, 257, 271, 285};
+  const int xPositions[] = {215, 229, 243, 257, 271, 285};
   const int y = 180;
   const int width = 10;
   const int height = 20;
 
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < totalDevices; i++) {
     uint16_t color = (i < count) ? SHIELDING_CONNECTION_PROGRESS_FILLED_COLOR
                                  : SHIELDING_CONNECTION_PROGRESS_EMPTY_COLOR;
     tft.fillRect(xPositions[i], y, width, height, color);
@@ -189,12 +189,12 @@ void DisplayController::renderModuleConnectionProgress(int count) {
 }
 
 void DisplayController::renderModuleCalibrationProgress(int count) {
-  const int xPositions[] = {187, 201, 215, 229, 243, 257, 271, 285};
+  const int xPositions[] = {215, 229, 243, 257, 271, 285};
   const int y = 215;
   const int width = 10;
   const int height = 20;
 
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < totalDevices; i++) {
     uint16_t color = (i < count) ? SHIELDING_CALIBRATION_PROGRESS_FILLED_COLOR
                                  : SHIELDING_CALIBRATION_PROGRESS_EMPTY_COLOR;
     tft.fillRect(xPositions[i], y, width, height, color);
@@ -215,30 +215,33 @@ void DisplayController::updateShieldPower(int calibrated, int total) {
   renderShieldValue(buf, SHIELDING_POWER_Y, TFT_WHITE);
 
   // Update detection risk based on shield power
-  updateDetectionRisk(percentage);
+  updateDetectionRisk(calibrated);
 }
 
-void DisplayController::updateDetectionRisk(float percentage) {
-  // Determine risk level based on shield power (inverse relationship)
+void DisplayController::updateDetectionRisk(int calibrated) {
   const char* riskLevel;
-  if (percentage < 12.5f) {
-    riskLevel = "CRITICAL";
-  } else if (percentage < 25.0f) {
-    riskLevel = "SEVERE";
-  } else if (percentage < 37.5f) {
-    riskLevel = "HIGH";
-  } else if (percentage < 50.0f) {
-    riskLevel = "ELEVATED";
-  } else if (percentage < 62.5f) {
-    riskLevel = "MODERATE";
-  } else if (percentage < 75.0f) {
-    riskLevel = "GUARDED";
-  } else if (percentage < 87.5f) {
-    riskLevel = "LOW";
-  } else if (percentage < 100.0f) {
-    riskLevel = "MINIMAL";
-  } else {
-    riskLevel = "SECURE";
+  switch (calibrated) {
+    case 0:
+      riskLevel = "CRITICAL";
+      break;
+    case 1:
+      riskLevel = "SEVERE";
+      break;
+    case 2:
+      riskLevel = "ELEVATED";
+      break;
+    case 3:
+      riskLevel = "MODERATE";
+      break;
+    case 4:
+      riskLevel = "LOW";
+      break;
+    case 5:
+      riskLevel = "MINIMAL";
+      break;
+    default:
+      riskLevel = "SECURE";
+      break;
   }
 
   // Clear old Value

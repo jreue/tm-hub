@@ -84,7 +84,7 @@ class DisplayController {
     void renderModuleConnectionProgress(int count);
     void renderModuleCalibrationProgress(int count);
     void updateShieldPower(int calibrated, int total);
-    void updateDetectionRisk(float percentage);
+    void updateDetectionRisk(int calibrated);
 
     void renderLabel(const String& text, int y);
     void renderShieldLabel(const String& text, int y);

@@ -329,6 +329,8 @@ void handleTravelButtonPress(void* button_handle, void* usr_data) {
 
   gameState.save();
 
+  // Send current date to scanner for date validation during environment scanning
+  espNowHelper.sendDateUpdated(scannerMacAddress, currentMonth, currentDay, currentYear);
   // clear target date after travel
   espNowHelper.sendDateUpdated(dateMacAddress, targetMonth, targetDay, targetYear);
 

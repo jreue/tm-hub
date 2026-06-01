@@ -26,6 +26,9 @@ const char* const INTERCEPT_SECONDS = "timer-seconds";
 
 // Shield module keys
 const char* const MODULE_COUNT = "module-count";
+
+// Game completion
+const char* const GAME_COMPLETE = "game-complete";
 }  // namespace StorageKeys
 
 // Default values
@@ -76,6 +79,10 @@ class GameState {
     // Target date validation
     bool isValidTargetDate();
 
+    // Game completion
+    bool isGameComplete() const;
+    void setGameComplete(bool complete);
+
   private:
     Preferences preferences;
 
@@ -95,4 +102,7 @@ class GameState {
     // Shield module states (max 10 shield modules)
     ModuleState shieldModuleStates[10];
     int numShieldModules;
+
+    // Game completion
+    bool gameComplete;
 };

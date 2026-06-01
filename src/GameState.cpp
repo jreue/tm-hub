@@ -13,7 +13,8 @@ GameState::GameState()
       interceptHours(Defaults::INTERCEPT_HOURS),
       interceptMinutes(Defaults::INTERCEPT_MINUTES),
       interceptSeconds(Defaults::INTERCEPT_SECONDS),
-      numShieldModules(0) {
+      numShieldModules(0),
+      gameComplete(false) {
   // Initialize shield module states
   for (int i = 0; i < 10; i++) {
     shieldModuleStates[i].available = false;
@@ -60,6 +61,9 @@ void GameState::load() {
     shieldModuleStates[i].available = preferences.getBool(availKey.c_str(), false);
     shieldModuleStates[i].calibrated = preferences.getBool(calKey.c_str(), false);
   }
+
+  // Load game completion state
+  gameComplete = preferences.getBool(StorageKeys::GAME_COMPLETE, false);
 
   preferences.end();
 
@@ -111,6 +115,9 @@ void GameState::save() {
     preferences.putBool(availKey.c_str(), shieldModuleStates[i].available);
     preferences.putBool(calKey.c_str(), shieldModuleStates[i].calibrated);
   }
+
+  // Save game completion state
+  preferences.putBool(StorageKeys::GAME_COMPLETE, gameComplete);
 
   preferences.end();
   Serial.println("Game state saved to NVS");
@@ -241,4 +248,12 @@ void GameState::rollDates() {
 
 bool GameState::isValidTargetDate() {
   return (targetMonth != 0 && targetDay != 0 && targetYear != 0);
+}
+
+bool GameState::isGameComplete() const {
+  return gameComplete;
+}
+
+void GameState::setGameComplete(bool complete) {
+  gameComplete = complete;
 }

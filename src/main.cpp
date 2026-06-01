@@ -76,6 +76,9 @@ void updateDateStateOnHubDisplay();
 
 void handleInterceptTick();
 
+void handleGameComplete();
+void checkAndHandleGameComplete();
+
 void forwardScannerConnectedToEffects();
 void forwardShieldModuleStateToEffects(ShieldModuleMessage msg);
 void forwardTravelEventToEffects(uint8_t month, uint8_t day, uint16_t year);
@@ -194,6 +197,10 @@ void handleInterceptTick() {
   if (interceptTickFlag) {
     interceptTickFlag = false;
 
+    if (gameState.isGameComplete()) {
+      return;  // Game complete — freeze the timer display
+    }
+
     gameState.tickCountdown();
 
     int hours, minutes, seconds;
@@ -267,6 +274,7 @@ void handleShieldModuleOnline(int moduleIndex, uint8_t moduleId, bool calibrated
   ledHelper.updateStatusLEDs(moduleIndex, true, calibrated);
   updateShieldModuleStateOnHubDisplay();
   gameState.save();
+  checkAndHandleGameComplete();
 }
 
 void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, bool calibrated) {
@@ -275,6 +283,7 @@ void handleShieldModuleCalibrationChanged(int moduleIndex, uint8_t moduleId, boo
   ledHelper.updateStatusLEDs(moduleIndex, true, calibrated);
   updateShieldModuleStateOnHubDisplay();
   gameState.save();
+  checkAndHandleGameComplete();
 }
 
 void handleDevice858Message(const Device858Message& msg) {
@@ -422,4 +431,31 @@ void forwardTravelEventToEffects(uint8_t month, uint8_t day, uint16_t year) {
   Serial.println("Forwarding travel event to effects...");
 
   espNowHelper.sendDateUpdated(effectsMacAddress, month, day, year);
+}
+
+void checkAndHandleGameComplete() {
+  if (gameState.isGameComplete()) {
+    return;  // Already triggered
+  }
+
+  ModuleState* moduleStates = gameState.getShieldModuleStates();
+  int calibratedCount = 0;
+  for (int i = 0; i < NUM_MODULES; i++) {
+    if (moduleStates[i].calibrated) {
+      calibratedCount++;
+    }
+  }
+
+  if (calibratedCount == NUM_MODULES) {
+    gameState.setGameComplete(true);
+    gameState.save();
+    handleGameComplete();
+  }
+}
+
+void handleGameComplete() {
+  Serial.println("*** GAME COMPLETE! All shield modules calibrated! ***");
+  // Timer countdown is frozen via the guard in handleInterceptTick()
+  // TODO: TFT display celebration sequence
+  // TODO: LED celebration effect
 }

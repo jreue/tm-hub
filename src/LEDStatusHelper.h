@@ -10,6 +10,7 @@ class LEDStatusHelper {
     LEDStatusHelper();
     void begin();
     void updateStatusLEDs(int deviceIndex, bool isAvailable, bool isCalibrated);
+    void triggerTravelEffect();
     void animate();
 
   private:
@@ -18,7 +19,7 @@ class LEDStatusHelper {
     bool deviceCalibrated[NUM_DEVICES];  // Track which devices are calibrated
 
     // Transient event effect state
-    enum class TransientEffect { NONE, CONNECTED, CALIBRATION_CELEBRATION };
+    enum class TransientEffect { NONE, CONNECTED, CALIBRATION_CELEBRATION, TRAVEL };
     TransientEffect _activeEffect;
     unsigned long _effectStart;
     int _effectDeviceIndex;
@@ -27,7 +28,8 @@ class LEDStatusHelper {
     void getDeviceLEDIndices(int deviceIndex, uint8_t indices[8]);
 
     // Shared comet rendering helper
-    void renderRingComets(int ringBase, float headPos, CRGB color, float brightness);
+    void renderRingComets(int ringBase, float headPos, CRGB color, float brightness,
+                          bool clockwise = true);
 
     // Status state effects — called by animate() when no transient effect is active
     void renderOfflineStateEffect(int deviceIndex);      // RED gentle breath
@@ -37,4 +39,5 @@ class LEDStatusHelper {
     // Transient event effects — return true when the effect has finished
     bool renderConnectedEffect(int deviceIndex);
     bool renderCalibrationCelebrationEffect(int deviceIndex);
+    bool renderTravelEffect();
 };

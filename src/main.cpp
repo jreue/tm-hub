@@ -312,6 +312,8 @@ void handleTravelButtonPress(void* button_handle, void* usr_data) {
     return;
   }
 
+  ledHelper.triggerTravelEffect();
+
   // Roll the dates
   gameState.rollDates();
 

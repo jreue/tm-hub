@@ -75,6 +75,11 @@ void LEDStatusHelper::updateStatusLEDs(int deviceIndex, bool isAvailable, bool i
   deviceCalibrated[deviceIndex] = isCalibrated;
 }
 
+void LEDStatusHelper::triggerTravelEffect() {
+  _activeEffect = TransientEffect::TRAVEL;
+  _effectStart = millis();
+}
+
 // Called every loop tick. Dispatches transient event effects when active,
 // otherwise renders per-device status. Owns the single FastLED.show() call.
 void LEDStatusHelper::animate() {
@@ -84,6 +89,8 @@ void LEDStatusHelper::animate() {
       done = renderConnectedEffect(_effectDeviceIndex);
     } else if (_activeEffect == TransientEffect::CALIBRATION_CELEBRATION) {
       done = renderCalibrationCelebrationEffect(_effectDeviceIndex);
+    } else if (_activeEffect == TransientEffect::TRAVEL) {
+      done = renderTravelEffect();
     }
     if (done)
       _activeEffect = TransientEffect::NONE;
@@ -176,7 +183,8 @@ void LEDStatusHelper::renderCalibrationStateEffect(int deviceIndex) {
 // headPos   : current head position in LED units (fractional; wraps at LEDS_PER_RING).
 // color     : base CRGB color of the comet head.
 // brightness: overall scale 0.0–1.0 used to fade the ring in/out between phases.
-void LEDStatusHelper::renderRingComets(int ringBase, float headPos, CRGB color, float brightness) {
+void LEDStatusHelper::renderRingComets(int ringBase, float headPos, CRGB color, float brightness,
+                                       bool clockwise) {
   const int NUM_COMETS = 3;
   const int TAIL_LENGTH = 5;
   const float TAIL_DECAY = 0.55f;  // brightness multiplier per tail LED
@@ -190,11 +198,12 @@ void LEDStatusHelper::renderRingComets(int ringBase, float headPos, CRGB color, 
         CRGB((uint8_t)(color.r * brightness), (uint8_t)(color.g * brightness),
              (uint8_t)(color.b * brightness));
 
-    // Tail — exponential fade behind the head (counter-clockwise)
+    // Tail — exponential fade, direction follows comet motion
     float tailBr = brightness;
     for (int t = 1; t <= TAIL_LENGTH; t++) {
       tailBr *= TAIL_DECAY;
-      int tailIdx = (headIdx - t + LEDS_PER_RING) % LEDS_PER_RING;
+      int tailIdx =
+          clockwise ? (headIdx - t + LEDS_PER_RING) % LEDS_PER_RING : (headIdx + t) % LEDS_PER_RING;
       leds[ringBase + tailIdx] += CRGB((uint8_t)(color.r * tailBr), (uint8_t)(color.g * tailBr),
                                        (uint8_t)(color.b * tailBr));
     }
@@ -328,6 +337,149 @@ bool LEDStatusHelper::renderCalibrationCelebrationEffect(int deviceIndex) {
     getDeviceLEDIndices(deviceIndex, indices);
     for (int i = 0; i < 8; i++) {
       leds[indices[i]] += CRGB((uint8_t)(128 * phase3t), 0, (uint8_t)(128 * phase3t));
+    }
+  }
+
+  return false;
+}
+
+// ============================================================================
+// Time Travel Effect — 18 seconds, audio-synced to the travel sequence
+// Phase 1 (0–4s):   Electrical charge — blue-white sparks from darkness to full
+// Phase 2 (4–13s):  Time Storm — counter-rotating rainbow comets + sparkle chaos
+// Phase 3 (13–16s): Temporal Vortex — synced rings, depth flash, 10Hz pulse
+// Phase 4 (16–18s): Landing — decelerate, white flash, dissolve to status
+// ============================================================================
+bool LEDStatusHelper::renderTravelEffect() {
+  const unsigned long DURATION = 18000;
+  const unsigned long PHASE2_MS = 4000;
+  const unsigned long PHASE3_MS = 13000;
+  const unsigned long PHASE4_MS = 16000;
+
+  unsigned long elapsed = millis() - _effectStart;
+  if (elapsed >= DURATION)
+    return true;
+
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+
+  if (elapsed < PHASE2_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 1: Electrical Charge Up (0–4s)
+    // Blue-white sparks grow from sparse to dense as energy builds
+    // -----------------------------------------------------------------------
+    float t = elapsed / (float)PHASE2_MS;  // 0.0 → 1.0
+    float sec = elapsed / 1000.0f;
+
+    for (int i = 0; i < NUM_LEDS; i++) {
+      // Each LED has a unique fast-flickering frequency (golden-ratio spacing)
+      float sp = sinf(sec * (8.0f + fmodf(i * 4.17f, 14.0f)) + i * 1.6180f);
+      sp = (sp + 1.0f) / 2.0f;              // 0.0 → 1.0
+      float threshold = 0.92f - t * 0.82f;  // 0.92 → 0.10
+      float br = sp > threshold ? (sp - threshold) / (1.0f - threshold) : 0.0f;
+      br *= t;  // global brightness ramp from black
+
+      // Secondary oscillation adds occasional white flashes
+      float flash = sinf(sec * 29.0f + i * 3.7321f);
+      flash = (flash + 1.0f) / 2.0f;
+      float whiteMix = flash * t * 0.4f;
+
+      leds[i] = CRGB((uint8_t)((80.0f + 175.0f * whiteMix) * br),
+                     (uint8_t)((120.0f + 135.0f * whiteMix) * br), (uint8_t)(255.0f * br));
+    }
+
+  } else if (elapsed < PHASE3_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 2: Time Storm (4–13s)
+    // Counter-rotating rainbow comets over dense hue-cycling sparkle chaos
+    // -----------------------------------------------------------------------
+    float sec = elapsed / 1000.0f;
+    float headPos = (sec - 4.0f) * 3.5f * LEDS_PER_RING;     // 3.5 rev/sec since phase start
+    uint8_t baseHue = (uint8_t)((elapsed - PHASE2_MS) / 8);  // full rainbow cycle every ~2s
+
+    // Sparkle base layer: rapid rainbow flicker across all 48 LEDs
+    for (int i = 0; i < NUM_LEDS; i++) {
+      float sp = sinf(sec * 12.0f + i * 2.3999f) * sinf(sec * 7.0f + i * 1.6180f);
+      float br = (sp + 1.0f) / 2.0f;
+      CRGB col;
+      hsv2rgb_rainbow(CHSV(baseHue + (uint8_t)(i * 5), 255, (uint8_t)(200 * br)), col);
+      leds[i] = col;
+    }
+
+    // Counter-rotating comets — center/right CW, left ring CCW
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      bool cw = (ring != 1);  // ring 1 = left ring, spins CCW
+      float pos =
+          cw ? headPos : fmodf(LEDS_PER_RING - fmodf(headPos, LEDS_PER_RING), LEDS_PER_RING);
+      uint8_t ringHue = baseHue + (uint8_t)(ring * 85);
+      CRGB cometColor;
+      hsv2rgb_rainbow(CHSV(ringHue, 255, 255), cometColor);
+      renderRingComets(ring * LEDS_PER_RING, pos, cometColor, 1.0f, cw);
+    }
+
+  } else if (elapsed < PHASE4_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 3: Temporal Vortex (13–16s)
+    // All rings locked together, fast ice-blue spin, depth-tunnel flash, 10Hz throb
+    // -----------------------------------------------------------------------
+    float sec = elapsed / 1000.0f;
+    // Continue position from end of Phase 2 (31.5 rev) at 5 rev/sec
+    float pos = (31.5f + 5.0f * (sec - 13.0f)) * LEDS_PER_RING;
+
+    // Sequential ring depth flash: center → left → right, 200ms each, 600ms cycle
+    int flashRing = (int)(((elapsed - PHASE3_MS) % 600UL) / 200);
+
+    // 10Hz throb pulse
+    float pulseSec = (elapsed - PHASE3_MS) / 1000.0f;
+    float pulse = 0.55f + 0.45f * sinf(pulseSec * 10.0f * 2.0f * PI);
+
+    CRGB iceBlue = CRGB(100, 200, 255);
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      float ringBr = (ring == flashRing ? 1.0f : 0.65f) * pulse;
+      renderRingComets(ring * LEDS_PER_RING, pos, iceBlue, ringBr);
+    }
+
+  } else {
+    // -----------------------------------------------------------------------
+    // Phase 4: Landing (16–18s)
+    // Comets decelerate; white flash peaks at t=17s; status glow fades back in
+    // -----------------------------------------------------------------------
+    float u = (elapsed - PHASE4_MS) / 1000.0f;  // 0 → 2 seconds
+    float phase4t = u / 2.0f;                   // 0.0 → 1.0
+    // Integrated decel: speed 5→0 rev/sec over 2s → pos = 46.5 + 5u − 1.25u²
+    float pos = (46.5f + 5.0f * u - 1.25f * u * u) * LEDS_PER_RING;
+
+    CRGB iceBlue = CRGB(100, 200, 255);
+    float cometBr = 1.0f - phase4t;
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      renderRingComets(ring * LEDS_PER_RING, pos, iceBlue, cometBr);
+    }
+
+    // White flash: narrow bell curve peaking at phase4t=0.5 (t=17s)
+    float flashBr = 1.0f - fabsf(phase4t - 0.5f) * 6.0f;
+    if (flashBr > 0.0f) {
+      uint8_t flashVal = (uint8_t)(255 * flashBr);
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] += CRGB(flashVal, flashVal, flashVal);
+      }
+    }
+
+    // Status glow fades in over the final third of the landing
+    if (phase4t > 0.65f) {
+      float statusFade = (phase4t - 0.65f) / 0.35f;
+      for (int i = 0; i < NUM_DEVICES; i++) {
+        uint8_t devIndices[8];
+        getDeviceLEDIndices(i, devIndices);
+        CRGB statusColor;
+        if (!deviceAvailable[i])
+          statusColor = CRGB((uint8_t)(128 * statusFade), 0, 0);
+        else if (!deviceCalibrated[i])
+          statusColor = CRGB(0, (uint8_t)(128 * statusFade), 0);
+        else
+          statusColor = CRGB((uint8_t)(64 * statusFade), 0, (uint8_t)(64 * statusFade));
+        for (int j = 0; j < 8; j++) {
+          leds[devIndices[j]] += statusColor;
+        }
+      }
     }
   }
 

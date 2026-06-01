@@ -16,8 +16,9 @@
 // LED Status Display
 #define LED_DATA_PIN 25
 #define NUM_LEDS 48
-#define MATRIX_COLS 4
-#define MATRIX_ROWS 12
+#define NUM_DEVICES 6
+#define NUM_RINGS 3
+#define LEDS_PER_RING 16
 
 // Buttons
 #define TRAVEL_BUTTON_PIN GPIO_NUM_32

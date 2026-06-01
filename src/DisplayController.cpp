@@ -244,10 +244,19 @@ void DisplayController::updateDetectionRisk(int calibrated) {
       break;
   }
 
+  uint16_t riskColor;
+  if (calibrated >= 6) {
+    riskColor = COLOR_WARNING_GREEN;
+  } else if (calibrated >= 4) {
+    riskColor = COLOR_WARNING_YELLOW;
+  } else {
+    riskColor = COLOR_WARNING_ORANGE;
+  }
+
   // Clear old Value
   tft.fillRect(200, SHIELDING_DETECTION_RISK_Y, 100, 15, TFT_BLACK);
   // Render new Value
-  renderShieldValue(riskLevel, SHIELDING_DETECTION_RISK_Y, COLOR_WARNING_ORANGE);
+  renderShieldValue(riskLevel, SHIELDING_DETECTION_RISK_Y, riskColor);
 }
 
 void DisplayController::updateInterceptWindow(int hours, int minutes, int seconds,

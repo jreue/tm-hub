@@ -240,7 +240,7 @@ void DisplayController::updateDetectionRisk(int calibrated) {
       riskLevel = "MINIMAL";
       break;
     default:
-      riskLevel = "SECURE";
+      riskLevel = "ZERO";
       break;
   }
 

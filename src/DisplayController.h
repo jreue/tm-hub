@@ -74,6 +74,10 @@ class DisplayController {
     void updateCorePower(const String& status);
     void updateServiceLink(bool connected);
 
+    // Game complete effect
+    void triggerShieldingCompleteEffect();
+    void animateShieldingCompleteEffect();
+
   private:
     TFT_eSPI tft;
     int totalDevices;
@@ -94,4 +98,18 @@ class DisplayController {
 
     void renderValue(const String& text, int y, uint16_t color);
     void renderShieldValue(const String& text, int y, uint16_t color);
+
+    // Game complete effect — state machine
+    enum class GameCompletePhase { NONE, TRANSITION, ACTIVATING, COMPLETE };
+    GameCompletePhase _gcPhase;
+    unsigned long _gcPhaseStart;
+    int _gcCountdown;
+    int _gcLastRenderedCountdown;
+    int _gcLastBarY;
+
+    void clearShieldingInterior();
+    void renderShieldingCompleteTransitionEffect();
+    void renderActivatingScreen(int seconds);
+    void renderCountdownNumber(int seconds);
+    void renderShieldsActiveScreen();
 };

@@ -48,6 +48,10 @@ void LEDStatusHelper::begin() {
   FastLED.show();
 }
 
+bool LEDStatusHelper::isEffectActive() const {
+  return _activeEffect != TransientEffect::NONE;
+}
+
 // Records the connection/calibration state of a device.
 // Detects state transitions and triggers transient event effects.
 // animate() owns all rendering — no FastLED.show() here.

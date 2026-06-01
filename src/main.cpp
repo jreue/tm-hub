@@ -27,6 +27,10 @@ DateMessage pendingDateMessage;
 // Timer interrupt flag
 volatile bool interceptTickFlag = false;
 
+// Deferred game-complete trigger — set when all modules calibrate,
+// but handleGameComplete() is not called until the LED effect finishes
+bool gameCompletePending = false;
+
 // Helper to get shield module index from ID
 int getShieldModuleIndex(uint8_t moduleId) {
   for (int i = 0; i < NUM_MODULES; i++) {
@@ -125,6 +129,17 @@ void loop() {
   ledHelper.animate();
 
   handleInterceptTick();
+
+  // Wait for the calibration celebration LED effect to finish before
+  // triggering the TFT game-complete sequence
+  if (gameCompletePending && !ledHelper.isEffectActive()) {
+    gameCompletePending = false;
+    handleGameComplete();
+  }
+
+  if (gameState.isGameComplete()) {
+    displayController.animateShieldingCompleteEffect();
+  }
 
   delay(10);  // Small delay to avoid busy loop
 }
@@ -449,13 +464,13 @@ void checkAndHandleGameComplete() {
   if (calibratedCount == NUM_MODULES) {
     gameState.setGameComplete(true);
     gameState.save();
-    handleGameComplete();
+    gameCompletePending = true;  // Defer until LED celebration effect finishes
   }
 }
 
 void handleGameComplete() {
   Serial.println("*** GAME COMPLETE! All shield modules calibrated! ***");
   // Timer countdown is frozen via the guard in handleInterceptTick()
-  // TODO: TFT display celebration sequence
+  displayController.triggerShieldingCompleteEffect();
   // TODO: LED celebration effect
 }

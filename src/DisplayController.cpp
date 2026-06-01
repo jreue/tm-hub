@@ -1,6 +1,11 @@
 #include "DisplayController.h"
 
-DisplayController::DisplayController() {
+DisplayController::DisplayController()
+    : _gcPhase(GameCompletePhase::NONE),
+      _gcPhaseStart(0),
+      _gcCountdown(30),
+      _gcLastRenderedCountdown(-1),
+      _gcLastBarY(-1) {
 }
 
 void DisplayController::begin(int deviceCount) {
@@ -297,4 +302,111 @@ void DisplayController::updateServiceLink(bool connected) {
   tft.fillRect(174, SERVICE_LINK_Y, 140, 15, TFT_BLACK);
   // Render new Value
   renderValue(status, SERVICE_LINK_Y, color);
+}
+
+// ============================================================================
+// Game Complete Effect — non-blocking state machine
+// Interior area: x:11, y:163, w:298, h:161  (preserves border + SHIELDING badge)
+// ============================================================================
+
+void DisplayController::triggerShieldingCompleteEffect() {
+  _gcPhase = GameCompletePhase::TRANSITION;
+  _gcPhaseStart = millis();
+  _gcLastBarY = -1;
+  clearShieldingInterior();
+}
+
+void DisplayController::animateShieldingCompleteEffect() {
+  unsigned long elapsed = millis() - _gcPhaseStart;
+
+  if (_gcPhase == GameCompletePhase::TRANSITION) {
+    if (elapsed >= 4000) {
+      _gcPhase = GameCompletePhase::ACTIVATING;
+      _gcPhaseStart = millis();
+      _gcCountdown = 30;
+      _gcLastRenderedCountdown = -1;
+      clearShieldingInterior();
+      renderActivatingScreen(30);
+    } else {
+      renderShieldingCompleteTransitionEffect();
+    }
+
+  } else if (_gcPhase == GameCompletePhase::ACTIVATING) {
+    int currentCountdown = 30 - (int)((millis() - _gcPhaseStart) / 1000);
+    if (currentCountdown < 0)
+      currentCountdown = 0;
+
+    if (currentCountdown != _gcLastRenderedCountdown) {
+      renderCountdownNumber(currentCountdown);
+    }
+
+    if (currentCountdown == 0 && _gcLastRenderedCountdown == 0) {
+      _gcPhase = GameCompletePhase::COMPLETE;
+      clearShieldingInterior();
+      renderShieldsActiveScreen();
+    }
+  }
+  // GameCompletePhase::COMPLETE and NONE: nothing to do
+}
+
+void DisplayController::clearShieldingInterior() {
+  tft.fillRect(11, 163, 298, 161, TFT_BLACK);
+}
+
+void DisplayController::renderShieldingCompleteTransitionEffect() {
+  const unsigned long SWEEP_DURATION = 700;
+  unsigned long elapsed = millis() - _gcPhaseStart;
+  int sweepCount = elapsed / SWEEP_DURATION;
+  float sweepPhase = (elapsed % SWEEP_DURATION) / (float)SWEEP_DURATION;
+
+  int newBarY =
+      163 + (int)(sweepPhase *
+                  153);  // 153 keeps bar bottom (newBarY+7) at y:323, inside the y:324 border
+  if (newBarY == _gcLastBarY)
+    return;
+
+  // Erase previous bar
+  if (_gcLastBarY >= 0) {
+    tft.fillRect(11, _gcLastBarY, 298, 8, TFT_BLACK);
+  }
+
+  // Alternate color each sweep
+  uint16_t barColor = (sweepCount % 2 == 0) ? COLOR_NEON_BLUE : TFT_WHITE;
+  tft.fillRect(11, newBarY, 298, 8, barColor);
+  _gcLastBarY = newBarY;
+}
+
+void DisplayController::renderActivatingScreen(int seconds) {
+  tft.setTextColor(COLOR_NEON_BLUE);
+  tft.setFreeFont(&FreeMonoBold9pt7b);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("Activating Shield", 160, 178);
+  tft.drawString("Modules...", 160, 198);
+  tft.drawLine(20, 220, 300, 220, COLOR_NEON_BLUE);
+  tft.setTextDatum(TL_DATUM);
+  renderCountdownNumber(seconds);
+}
+
+void DisplayController::renderCountdownNumber(int seconds) {
+  // Clear the number area
+  tft.fillRect(11, 222, 298, 100, TFT_BLACK);
+
+  tft.setTextColor(COLOR_INTERCEPT_ORANGE);
+  tft.setFreeFont(&FreeMonoBold24pt7b);
+  tft.setTextSize(2);  // Double size: ~80px tall, fits the available space
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString(String(seconds), 160, 228);
+  tft.setTextDatum(TL_DATUM);
+  tft.setTextSize(1);  // Reset for other rendering
+
+  _gcLastRenderedCountdown = seconds;
+}
+
+void DisplayController::renderShieldsActiveScreen() {
+  tft.setTextColor(COLOR_NEON_GREEN);
+  tft.setFreeFont(&FreeMonoBold24pt7b);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString("SHIELDS", 160, 195);
+  tft.drawString("ACTIVE", 160, 243);
+  tft.setTextDatum(TL_DATUM);
 }

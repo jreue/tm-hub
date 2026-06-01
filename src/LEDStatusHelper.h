@@ -12,6 +12,7 @@ class LEDStatusHelper {
     void updateStatusLEDs(int deviceIndex, bool isAvailable, bool isCalibrated);
     void triggerTravelEffect();
     void animate();
+    bool isEffectActive() const;
 
   private:
     CRGB leds[NUM_LEDS];

@@ -5,7 +5,8 @@ DisplayController::DisplayController()
       _gcPhaseStart(0),
       _gcCountdown(30),
       _gcLastRenderedCountdown(-1),
-      _gcLastBarY(-1) {
+      _gcLastBarY(-1),
+      _gcFinalEffectFired(false) {
 }
 
 void DisplayController::begin(int deviceCount) {
@@ -313,7 +314,21 @@ void DisplayController::triggerShieldingCompleteEffect() {
   _gcPhase = GameCompletePhase::TRANSITION;
   _gcPhaseStart = millis();
   _gcLastBarY = -1;
+  _gcFinalEffectFired = false;
   clearShieldingInterior();
+}
+
+bool DisplayController::shouldFireFinalEffect() {
+  if (_gcFinalEffectFired)
+    return false;
+  if (_gcPhase != GameCompletePhase::ACTIVATING)
+    return false;
+  int currentCountdown = 30 - (int)((millis() - _gcPhaseStart) / 1000);
+  if (currentCountdown <= 4) {
+    _gcFinalEffectFired = true;
+    return true;
+  }
+  return false;
 }
 
 void DisplayController::animateShieldingCompleteEffect() {

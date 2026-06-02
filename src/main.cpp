@@ -139,6 +139,10 @@ void loop() {
 
   if (gameState.isGameComplete()) {
     displayController.animateShieldingCompleteEffect();
+    // Fire the effects-device message in the last 4 seconds of the countdown
+    if (displayController.shouldFireFinalEffect()) {
+      espNowHelper.sendHubEffect(effectsMacAddress, 6);
+    }
   }
 
   delay(10);  // Small delay to avoid busy loop
@@ -316,7 +320,8 @@ void handleDevice858Message(const Device858Message& msg) {
 
         handleTravelButtonPress(nullptr, nullptr);
       } else if (msg.doResetOverride) {
-        Serial.println("Reset override flag is set in 858 message. No reset behavior defined yet.");
+        Serial.println("Reset override flag is set in 858 message. Triggering reset event...");
+        handleResetButtonPress(nullptr, nullptr);
       } else if (msg.doStartupOverride) {
         Serial.println(
             "Startup override flag is set in 858 message. No startup behavior defined yet.");
@@ -472,5 +477,5 @@ void handleGameComplete() {
   Serial.println("*** GAME COMPLETE! All shield modules calibrated! ***");
   // Timer countdown is frozen via the guard in handleInterceptTick()
   displayController.triggerShieldingCompleteEffect();
-  // TODO: LED celebration effect
+  // espNowHelper.sendHubEffect fires later, via shouldFireFinalEffect() in loop()
 }

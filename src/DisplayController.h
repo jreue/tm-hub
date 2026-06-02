@@ -77,6 +77,7 @@ class DisplayController {
     // Game complete effect
     void triggerShieldingCompleteEffect();
     void animateShieldingCompleteEffect();
+    bool shouldFireFinalEffect();  // Returns true once when countdown reaches <= 4s
 
   private:
     TFT_eSPI tft;
@@ -106,6 +107,7 @@ class DisplayController {
     int _gcCountdown;
     int _gcLastRenderedCountdown;
     int _gcLastBarY;
+    bool _gcFinalEffectFired;
 
     void clearShieldingInterior();
     void renderShieldingCompleteTransitionEffect();

@@ -324,7 +324,7 @@ bool DisplayController::shouldFireFinalEffect() {
   if (_gcPhase != GameCompletePhase::ACTIVATING)
     return false;
   int currentCountdown = 30 - (int)((millis() - _gcPhaseStart) / 1000);
-  if (currentCountdown <= 4) {
+  if (currentCountdown <= 8) {
     _gcFinalEffectFired = true;
     return true;
   }

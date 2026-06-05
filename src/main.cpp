@@ -121,6 +121,10 @@ void setup() {
   updateDateStateOnHubDisplay();
   updateShieldModuleStateOnHubDisplay();
   updateShieldModuleStateOnHubLeds();
+
+  int h, m, s;
+  gameState.getInterceptWindowTime(h, m, s);
+  displayController.updateInterceptWindow(h, m, s, true, true);
 }
 
 void loop() {
@@ -220,6 +224,10 @@ void handleInterceptTick() {
 
     if (gameState.isGameComplete()) {
       return;  // Game complete — freeze the timer display
+    }
+
+    if (!gameState.isGameStarted()) {
+      return;  // Game not started yet — freeze the timer display
     }
 
     gameState.tickCountdown();
@@ -343,6 +351,7 @@ void handleTravelButtonPress(void* button_handle, void* usr_data) {
     return;
   }
 
+  gameState.startGame();
   ledHelper.triggerTravelEffect();
 
   // Roll the dates

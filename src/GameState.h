@@ -29,6 +29,7 @@ const char* const MODULE_COUNT = "module-count";
 
 // Game completion
 const char* const GAME_COMPLETE = "game-complete";
+const char* const GAME_STARTED = "game-started";
 }  // namespace StorageKeys
 
 // Default values
@@ -81,6 +82,8 @@ class GameState {
 
     // Game completion
     bool isGameComplete() const;
+    void startGame();
+    bool isGameStarted() const;
     void setGameComplete(bool complete);
 
   private:
@@ -105,4 +108,5 @@ class GameState {
 
     // Game completion
     bool gameComplete;
+    bool gameStarted;
 };

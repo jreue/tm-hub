@@ -84,6 +84,11 @@ void LEDStatusHelper::triggerTravelEffect() {
   _effectStart = millis();
 }
 
+void LEDStatusHelper::triggerDiscoPartyEffect() {
+  _activeEffect = TransientEffect::DISCO_PARTY;
+  _effectStart = millis();
+}
+
 // Called every loop tick. Dispatches transient event effects when active,
 // otherwise renders per-device status. Owns the single FastLED.show() call.
 void LEDStatusHelper::animate() {
@@ -95,6 +100,8 @@ void LEDStatusHelper::animate() {
       done = renderCalibrationCelebrationEffect(_effectDeviceIndex);
     } else if (_activeEffect == TransientEffect::TRAVEL) {
       done = renderTravelEffect();
+    } else if (_activeEffect == TransientEffect::DISCO_PARTY) {
+      done = renderDiscoPartyEffect();
     }
     if (done)
       _activeEffect = TransientEffect::NONE;
@@ -483,6 +490,190 @@ bool LEDStatusHelper::renderTravelEffect() {
         for (int j = 0; j < 8; j++) {
           leds[devIndices[j]] += statusColor;
         }
+      }
+    }
+  }
+
+  return false;
+}
+
+// ============================================================================
+// Disco Party Effect — 3 minutes, audio-synced to the game-complete music
+// Phase 1 (0–30s):   Rainbow ramp-up — accelerating counter-rotating comets
+// Phase 2 (30–80s):  Full disco — rainbow sparkle base + fast counter-rotating comets
+// Phase 3 (80–130s): Peak party — per-ring hue themes + white strobe flashes + sparkles
+// Phase 4 (130–170s): Encore — maximum speed, rainbow chaos, frequent strobes
+// Phase 5 (170–180s): Finale — big white flash, fade to black
+// ============================================================================
+bool LEDStatusHelper::renderDiscoPartyEffect() {
+  const unsigned long PHASE2_MS = 30000;
+  const unsigned long PHASE3_MS = 80000;
+  const unsigned long PHASE4_MS = 130000;
+  const unsigned long PHASE5_MS = 170000;
+  const unsigned long DURATION = 180000;  // 3 minutes
+
+  unsigned long elapsed = millis() - _effectStart;
+  if (elapsed >= DURATION)
+    return true;
+
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  float sec = elapsed / 1000.0f;
+
+  if (elapsed < PHASE2_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 1: Rainbow Ramp-Up (0–30s)
+    // Comets accelerate from slow to fast, counter-rotating, full hue cycle
+    // -----------------------------------------------------------------------
+    float t = elapsed / (float)PHASE2_MS;  // 0→1
+    float speed = 1.5f + t * 4.5f;         // 1.5→6 rev/sec
+    float cwPos = sec * speed * LEDS_PER_RING;
+    float ccwPos = fmodf(LEDS_PER_RING - fmodf(cwPos, LEDS_PER_RING), LEDS_PER_RING);
+    uint8_t baseHue = (uint8_t)(sec * 30.0f);  // full rainbow every ~8.5s
+
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      bool cw = (ring != 1);
+      float pos = cw ? cwPos : ccwPos;
+      uint8_t ringHue = baseHue + (uint8_t)(ring * 85);
+      CRGB cometColor;
+      hsv2rgb_rainbow(CHSV(ringHue, 255, 255), cometColor);
+      renderRingComets(ring * LEDS_PER_RING, pos, cometColor, t, cw);
+    }
+
+  } else if (elapsed < PHASE3_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 2: Full Disco (30–80s)
+    // Dense rainbow sparkle base + fast counter-rotating comets
+    // -----------------------------------------------------------------------
+    float sec2 = (elapsed - PHASE2_MS) / 1000.0f;
+    uint8_t baseHue = (uint8_t)(sec * 50.0f);  // faster hue cycle
+
+    // Rainbow sparkle base layer (same as travel Time Storm)
+    for (int i = 0; i < NUM_LEDS; i++) {
+      float sp = sinf(sec * 12.0f + i * 2.3999f) * sinf(sec * 7.0f + i * 1.6180f);
+      float br = (sp + 1.0f) / 2.0f;
+      CRGB col;
+      hsv2rgb_rainbow(CHSV(baseHue + (uint8_t)(i * 5), 255, (uint8_t)(200 * br)), col);
+      leds[i] = col;
+    }
+
+    float cwPos = sec2 * 5.0f * LEDS_PER_RING;
+    float ccwPos = fmodf(LEDS_PER_RING - fmodf(cwPos, LEDS_PER_RING), LEDS_PER_RING);
+
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      bool cw = (ring != 1);
+      float pos = cw ? cwPos : ccwPos;
+      uint8_t ringHue = baseHue + (uint8_t)(ring * 85);
+      CRGB cometColor;
+      hsv2rgb_rainbow(CHSV(ringHue, 255, 255), cometColor);
+      renderRingComets(ring * LEDS_PER_RING, pos, cometColor, 1.0f, cw);
+    }
+
+  } else if (elapsed < PHASE4_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 3: Peak Party (80–130s)
+    // Each ring its own hue + different speed + white strobe flashes + sparkles
+    // -----------------------------------------------------------------------
+    float sec3 = (elapsed - PHASE3_MS) / 1000.0f;
+    uint8_t baseHue = (uint8_t)(sec * 70.0f);
+
+    const float RING_SPEEDS[3] = {4.0f, 6.0f, 3.5f};
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      bool cw = (ring % 2 == 0);
+      float headPos = sec3 * RING_SPEEDS[ring] * LEDS_PER_RING;
+      float pos =
+          cw ? headPos : fmodf(LEDS_PER_RING - fmodf(headPos, LEDS_PER_RING), LEDS_PER_RING);
+      uint8_t ringHue = baseHue + (uint8_t)(ring * 85);
+      CRGB cometColor;
+      hsv2rgb_rainbow(CHSV(ringHue, 255, 255), cometColor);
+      renderRingComets(ring * LEDS_PER_RING, pos, cometColor, 1.0f, cw);
+    }
+
+    // White strobe flash — narrow sine peaks every ~1.5s
+    float strobe = sinf(sec * 4.2f * 2.0f * PI);
+    if (strobe > 0.92f) {
+      uint8_t flashVal = (uint8_t)(255 * (strobe - 0.92f) / 0.08f);
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] += CRGB(flashVal, flashVal, flashVal);
+      }
+    }
+
+    // Dense sparkles
+    for (int i = 0; i < NUM_LEDS; i++) {
+      float sp = sinf(sec3 * 15.0f + i * 1.9f) * sinf(sec3 * 9.0f + i * 2.618f);
+      if ((sp + 1.0f) / 2.0f > 0.78f) {
+        uint8_t sparkHue = baseHue + (uint8_t)(i * 11);
+        CRGB sparkColor;
+        hsv2rgb_rainbow(CHSV(sparkHue, 220, 255), sparkColor);
+        leds[i] += sparkColor;
+      }
+    }
+
+  } else if (elapsed < PHASE5_MS) {
+    // -----------------------------------------------------------------------
+    // Phase 4: Encore (130–170s)
+    // Maximum speed, full rainbow sparkle chaos, more frequent strobes
+    // -----------------------------------------------------------------------
+    float sec4 = (elapsed - PHASE4_MS) / 1000.0f;
+    uint8_t baseHue = (uint8_t)(sec * 90.0f);
+
+    // Full rainbow sparkle chaos base
+    for (int i = 0; i < NUM_LEDS; i++) {
+      float sp = sinf(sec * 14.0f + i * 2.3999f) * sinf(sec * 9.0f + i * 1.6180f);
+      float br = (sp + 1.0f) / 2.0f;
+      CRGB col;
+      hsv2rgb_rainbow(CHSV(baseHue + (uint8_t)(i * 7), 255, (uint8_t)(255 * br)), col);
+      leds[i] = col;
+    }
+
+    // Very fast counter-rotating comets
+    float cwPos = sec4 * 7.0f * LEDS_PER_RING;
+    float ccwPos = fmodf(LEDS_PER_RING - fmodf(cwPos, LEDS_PER_RING), LEDS_PER_RING);
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      bool cw = (ring != 1);
+      float pos = cw ? cwPos : ccwPos;
+      uint8_t ringHue = baseHue + 128 + (uint8_t)(ring * 85);  // complementary hue offset
+      CRGB cometColor;
+      hsv2rgb_rainbow(CHSV(ringHue, 255, 255), cometColor);
+      renderRingComets(ring * LEDS_PER_RING, pos, cometColor, 1.0f, cw);
+    }
+
+    // More frequent strobes
+    float strobe = sinf(sec * 6.0f * 2.0f * PI);
+    if (strobe > 0.88f) {
+      uint8_t flashVal = (uint8_t)(180 * (strobe - 0.88f) / 0.12f);
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] += CRGB(flashVal, flashVal, flashVal);
+      }
+    }
+
+  } else {
+    // -----------------------------------------------------------------------
+    // Phase 5: Finale (170–180s)
+    // Rainbow spin with big white flash, then fade to black
+    // -----------------------------------------------------------------------
+    float sec5 = (elapsed - PHASE5_MS) / 1000.0f;
+    float t = sec5 / 10.0f;  // 0→1 over 10s
+
+    float cwPos = sec5 * 8.0f * LEDS_PER_RING;
+    float ccwPos = fmodf(LEDS_PER_RING - fmodf(cwPos, LEDS_PER_RING), LEDS_PER_RING);
+    uint8_t baseHue = (uint8_t)(sec * 100.0f);
+    float fadeOut = 1.0f - t;
+
+    for (int ring = 0; ring < NUM_RINGS; ring++) {
+      bool cw = (ring != 1);
+      float pos = cw ? cwPos : ccwPos;
+      uint8_t ringHue = baseHue + (uint8_t)(ring * 85);
+      CRGB cometColor;
+      hsv2rgb_rainbow(CHSV(ringHue, 255, 255), cometColor);
+      renderRingComets(ring * LEDS_PER_RING, pos, cometColor, fadeOut, cw);
+    }
+
+    // White flash: peaks at t=0.3 then fades to black
+    float flash = (t < 0.3f) ? (t / 0.3f) : (1.0f - (t - 0.3f) / 0.7f);
+    if (flash > 0.0f) {
+      uint8_t flashVal = (uint8_t)(255 * flash);
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] += CRGB(flashVal, flashVal, flashVal);
       }
     }
   }

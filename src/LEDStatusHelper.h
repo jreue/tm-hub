@@ -11,6 +11,7 @@ class LEDStatusHelper {
     void begin();
     void updateStatusLEDs(int deviceIndex, bool isAvailable, bool isCalibrated);
     void triggerTravelEffect();
+    void triggerDiscoPartyEffect();
     void animate();
     bool isEffectActive() const;
 
@@ -20,7 +21,7 @@ class LEDStatusHelper {
     bool deviceCalibrated[NUM_DEVICES];  // Track which devices are calibrated
 
     // Transient event effect state
-    enum class TransientEffect { NONE, CONNECTED, CALIBRATION_CELEBRATION, TRAVEL };
+    enum class TransientEffect { NONE, CONNECTED, CALIBRATION_CELEBRATION, TRAVEL, DISCO_PARTY };
     TransientEffect _activeEffect;
     unsigned long _effectStart;
     int _effectDeviceIndex;
@@ -41,4 +42,5 @@ class LEDStatusHelper {
     bool renderConnectedEffect(int deviceIndex);
     bool renderCalibrationCelebrationEffect(int deviceIndex);
     bool renderTravelEffect();
+    bool renderDiscoPartyEffect();
 };

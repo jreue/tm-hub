@@ -139,9 +139,11 @@ void loop() {
 
   if (gameState.isGameComplete()) {
     displayController.animateShieldingCompleteEffect();
-    // Fire the effects-device message in the last 8 seconds of the countdown
+    // Fire the effects-device message and start the disco LED show in the last 8 seconds of the
+    // countdown
     if (displayController.shouldFireFinalEffect()) {
       espNowHelper.sendHubEffect(effectsMacAddress, 6);
+      ledHelper.triggerDiscoPartyEffect();
     }
   }
 
